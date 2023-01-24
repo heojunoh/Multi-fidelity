@@ -33,9 +33,9 @@ curretal88explc <- function(xx)
   y <- (yh1 + yh2 + yh3 + yh4) / 4
   return(y)
 }
-
+set.seed(5)
 ### training data ###
-n1 <- 10; n2 <- 7
+n1 <- 20; n2 <- 10
 d <- 2
 
 X2 <- maximinLHS(n2, d) # x^H
@@ -47,10 +47,8 @@ y1 <- apply(X1,1,curretal88explc)
 ### model fitting for f1 ###
 eps <- sqrt(.Machine$double.eps)
 fit.GP1 <- GP(X1, y1)
-# pred1 <- pred.GP(fit.GP1, x)
 
 ### model fitting using (x2, f1(x2)) ###
-# w1.x2 <- rnorm(n2, mean=pred.GP(fit.GP1, X2)$mu, sd=sqrt(pred.GP(fit.GP1, X2)$sig2)) # sample f1(x2)
 w1.x2 <- pred.GP(fit.GP1, X2)$mu # can interpolate; nested
 X2new <- cbind(X2, w1.x2) # combine (X2, f1(x2))
 fit.GP2new <- GP(X2new, y2) # model fitting for f_M(X2, f1(x2))
@@ -64,6 +62,7 @@ closed <- function(x, fit1, fit2){ # fit1; first layer, fit2; last layer's emula
   d <- ncol(fit1$X)
   x <- matrix(x, ncol=d)
   x.mu <- pred.GP(fit1, x)$mu # mean of f1(u)
+  sig2 <- pred.GP(fit1, x)$sig2 # variance of f1(x)
   
   ### calculate the closed form ###
   X2 <- matrix(fit2$X[,-(d+1)], ncol=d)
@@ -74,8 +73,11 @@ closed <- function(x, fit1, fit2){ # fit1; first layer, fit2; last layer's emula
   tau2hat <- fit2$tau2hat
   
   Ci <- fit2$Ki
-  a <- Ci %*% y2
-  sig2 <- pred.GP(fit1, x)$sig2 # variance of f1(x)
+  a <- Ci %*% (y2 * attr(y2, "scaled:scale") + attr(y2, "scaled:center"))
+  
+  ### scale new inputs ###
+  x <- t((t(x)-attr(fit2$X,"scaled:center")[1:d])/attr(fit2$X,"scaled:scale")[1:d])
+  x.mu <- t((t(x.mu)-attr(fit2$X,"scaled:center")[d+1])/attr(fit2$X,"scaled:scale")[d+1])
   
   # mean
   predy <- c(rep(0, nrow(x)))
@@ -130,9 +132,9 @@ pred2new <- pred.GP(fit.GP2new, xnew) # not closed form
 y1d2 <- apply(X2,1,curretal88explc)
 
 ### estimating first order ###
-fit.GP1 <- GP(X1, y1)
-b1 <- 1/fit.GP1$theta
-sig2_1 <- fit.GP1$tau2hat
+fit.KOHGP1 <- KOHGP(X1, y1)
+b1 <- 1/fit.KOHGP1$theta
+sig2_1 <- fit.KOHGP1$tau2hat
 
 ### estimating second order ###
 KOH(X2, y2, y1d2)
@@ -158,6 +160,12 @@ koh.var1 <- pmax(0, diag(sig2_2*covar.sep(x, d=1/b2, g=eps) + sig2_1*rho1^2*cova
 
 ### RMSE ###
 sqrt(mean((predy-apply(x,1,curretal88exp))^2)) # closed form
+sqrt(mean((pred2new$mu-apply(x,1,curretal88exp))^2)) # not closed form
 sqrt(mean((pred2$mu-apply(x,1,curretal88exp))^2)) # single fidelity
 sqrt(mean((mx1-apply(x,1,curretal88exp))^2)) # KOH
+
+
+sum(predsig2)
+sum(pred2new$sig2)
+sum(koh.var1)
 

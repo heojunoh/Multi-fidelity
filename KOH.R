@@ -1,6 +1,31 @@
 library(plgp)
-source("GP.R")
 eps <- sqrt(.Machine$double.eps) 
+
+KOHGP <- function(X, y, g=eps, center=TRUE){
+  
+  n <- length(y)
+  # if(center) y <- scale(y, scale=FALSE)
+  
+  nlsep <- function(par, X, Y) 
+  {
+    n <- length(Y)
+    theta <- par # lengthscale
+    K <- covar.sep(X, d=theta, g=g)
+    Ki <- solve(K+diag(g,n))
+    ldetK <- determinant(K, logarithm=TRUE)$modulus
+    ll <- - (n/2)*log(t(Y) %*% Ki %*% Y) - (1/2)*ldetK
+    return(drop(-ll))
+  }
+  
+  outg <- optim(c(rep(0.1, ncol(X))), nlsep, method="L-BFGS-B", 
+                lower=c(rep(0.001*sqrt(ncol(X)), ncol(X))), upper=c(rep(1000*sqrt(ncol(X)), ncol(X))), X=X, Y=y) 
+  
+  K <- covar.sep(X, d=outg$par, g=g)
+  Ki <- solve(K+diag(g,n))
+  tau2hat <- drop(t(y) %*% Ki %*% y / n)
+  
+  return(list(theta = outg$par, g=g, Ki=Ki, X = X, y = y, tau2hat=tau2hat))
+}
 
 KOH <- function(X, Y2, Y1, g=eps, center=TRUE){
   
@@ -10,8 +35,8 @@ KOH <- function(X, Y2, Y1, g=eps, center=TRUE){
   nlsep2 <- function(par, X, Y2, Y1) 
   {
     n <- length(Y2)
-    theta <- par # lengthscale
-    Y <- Y2-theta[ncol(X)+1]*Y1
+    theta <- par # lengthscale and rho
+    Y <- Y2-theta[ncol(X)+1]*Y1 # y2-rho*y1
     K <- covar.sep(X, d=theta[1:ncol(X)], g=g)
     Ki <- solve(K+diag(g,n))
     ldetK <- determinant(K, logarithm=TRUE)$modulus
