@@ -77,6 +77,9 @@ Icurrent <- mean(closed2(g, fit.GP1, fit.GP2new, fit.GP3new)$sig2) # current IMS
 Icand1 <- c(rep(0, length(g))) # IMSPE candidates
 Icand2 <- c(rep(0, length(g))) # IMSPE candidates
 Icand3 <- c(rep(0, length(g))) # IMSPE candidates
+Icand1fast <- c(rep(0, length(g))) # IMSPE candidates
+Icand2fast <- c(rep(0, length(g))) # IMSPE candidates
+Icand3fast <- c(rep(0, length(g))) # IMSPE candidates
 
 for(i in 1:length(Icand1)){ # no true, no need to fit just pred
   Icand1[i] <- IMSPE1(g, g[i], fit.GP1, fit.GP2new, fit.GP3new)
@@ -87,22 +90,41 @@ for(i in 1:length(Icand2)){ # no true, no need to fit just pred
 for(i in 1:length(Icand3)){ # no true, no need to fit just pred
   Icand3[i] <- IMSPE3(g, g[i], fit.GP1, fit.GP2new, fit.GP3new)
 }
+for(i in 1:length(Icand1)){ # no true, no need to fit just pred
+  Icand1fast[i] <- IMSPE1fast(g, g[i], fit.GP1, fit.GP2new, fit.GP3new)
+}
+for(i in 1:length(Icand2)){ # no true, no need to fit just pred
+  Icand2fast[i] <- IMSPE2fast(g, g[i], fit.GP1, fit.GP2new, fit.GP3new)
+}
+for(i in 1:length(Icand3)){ # no true, no need to fit just pred
+  Icand3fast[i] <- IMSPE3fast(g, g[i], fit.GP1, fit.GP2new, fit.GP3new)
+}
 
 plot(g, Icand1, type="l", lwd=2, col=3, ylim=range(Icand1))
 plot(g, Icand2, type="l", lwd=2, col=3, ylim=range(Icand2))
 plot(g, Icand3, type="l", lwd=2, col=3, ylim=range(Icand3))
+plot(g, Icand1fast, type="l", lwd=2, col=3, ylim=range(Icand1fast))
+plot(g, Icand2fast, type="l", lwd=2, col=3, ylim=range(Icand2fast))
+plot(g, Icand3fast, type="l", lwd=2, col=3, ylim=range(Icand3fast))
 
-which.min(Icand1)
+Icand1[which.min(Icand1)]
 which.min(Icand2)
 which.min(Icand3)
+Icand1[which.min(Icand1fast)]
+which.min(Icand2fast)
+which.min(Icand3fast)
+
+alc <- c(Icurrent - Icand1[which.min(Icand1)], Icurrent - Icand2[which.min(Icand2)], Icurrent - Icand3[which.min(Icand3)] )
+alc
+
+# cost; 1, 2, 3
+which.max(alc/c(1,2,3))
 
 
+# cost; 1, 10, 100
+which.max(alc/c(1,10,100))
 
-# Idiff <- I current - low, medium, high
 
-
-
-# Idiff * cost (C_L, C_L+C_M, C_L+C_M+C_H)
 
 
 
