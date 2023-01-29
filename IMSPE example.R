@@ -3,6 +3,9 @@ library(laGP)
 source("GP.R")
 source("KOH.R")
 source("closed.R")
+source("IMSPE1.R")
+source("IMSPE2.R")
+source("IMSPE3.R")
 
 ### synthetic function ###
 fl <- function(x, l){
@@ -68,7 +71,7 @@ sqrt(mean((pred3$mu-fl(x, l=5))^2)) # single fidelity
 ### IMSPE ###
 #############
 g <- seq(0,1,0.001) # more than 1-dim, use expand.grid()
-mean(closed2(g, fit.GP1, fit.GP2new, fit.GP3new)$sig2) # current IMSPE
+Icurrent <- mean(closed2(g, fit.GP1, fit.GP2new, fit.GP3new)$sig2) # current IMSPE
 
 ### Add 1 points to the low-fidelity data.
 Icand1 <- c(rep(0, length(g))) # IMSPE candidates
@@ -88,6 +91,10 @@ for(i in 1:length(Icand3)){ # no true, no need to fit just pred
 plot(g, Icand1, type="l", lwd=2, col=3, ylim=range(Icand1))
 plot(g, Icand2, type="l", lwd=2, col=3, ylim=range(Icand2))
 plot(g, Icand3, type="l", lwd=2, col=3, ylim=range(Icand3))
+
+which.min(Icand1)
+which.min(Icand2)
+which.min(Icand3)
 
 
 
