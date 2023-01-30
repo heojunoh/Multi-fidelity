@@ -107,23 +107,28 @@ plot(g, Icand1fast, type="l", lwd=2, col=3, ylim=range(Icand1fast))
 plot(g, Icand2fast, type="l", lwd=2, col=3, ylim=range(Icand2fast))
 plot(g, Icand3fast, type="l", lwd=2, col=3, ylim=range(Icand3fast))
 
-Icand1[which.min(Icand1)]
+plot(g, Icand1-Icand1fast)
+plot(g, Icand2-Icand2fast)
+plot(g, Icand3-Icand3fast)
+
+
+which.min(Icand1)
 which.min(Icand2)
 which.min(Icand3)
-Icand1[which.min(Icand1fast)]
+which.min(Icand1fast)
 which.min(Icand2fast)
 which.min(Icand3fast)
 
 alc <- c(Icurrent - Icand1[which.min(Icand1)], Icurrent - Icand2[which.min(Icand2)], Icurrent - Icand3[which.min(Icand3)] )
-alc
+alcfast <- c(Icurrent - Icand1fast[which.min(Icand1fast)], Icurrent - Icand2fast[which.min(Icand2fast)], Icurrent - Icand3fast[which.min(Icand3fast)] )
 
 # cost; 1, 2, 3
 which.max(alc/c(1,2,3))
-
+which.max(alcfast/c(1,2,3))
 
 # cost; 1, 10, 100
 which.max(alc/c(1,10,100))
-
+which.max(alcfast/c(1,10,100))
 
 
 
