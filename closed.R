@@ -15,16 +15,16 @@ closed <- function(x, fit1, fit2){ # fit1; first layer, fit2; last layer's emula
   tau2hat <- fit2$tau2hat
   
   Ci <- fit2$Ki
-  a <- Ci %*% (y2 * attr(y2, "scaled:scale") + attr(y2, "scaled:center"))
+  a <- Ci %*% (y2 + attr(y2, "scaled:center"))
   
   ### scale new inputs ###
   x <- t((t(x)-attr(fit2$X,"scaled:center")[1:d])/attr(fit2$X,"scaled:scale")[1:d])
   x.mu <- t((t(x.mu)-attr(fit2$X,"scaled:center")[d+1])/attr(fit2$X,"scaled:scale")[d+1])
   
   # mean
-  predy <- c(rep(0, length(x)))
+  predy <- c(rep(0, nrow(x)))
   
-  for(j in 1: length(x)){
+  for(j in 1: nrow(x)){
     predv <- c(rep(1,n))
     for(i in 1:n){
       for(m in 1:d){
@@ -37,9 +37,9 @@ closed <- function(x, fit1, fit2){ # fit1; first layer, fit2; last layer's emula
   }
   
   # var
-  predsig2 <- c(rep(0, length(x)))
+  predsig2 <- c(rep(0, nrow(x)))
   
-  for(i in 1: length(x)){
+  for(i in 1: nrow(x)){
     mat <- matrix(1, n, n)
     for(k in 1:n){
       for(l in 1:n){
@@ -77,16 +77,16 @@ closed2 <- function(x, fit1, fit2, fit3){ # fit1; first layer, fit2; second laye
   tau2hat <- fit3$tau2hat
   
   Ci <- fit3$Ki
-  a <- Ci %*% (y3 * attr(y3, "scaled:scale") + attr(y3, "scaled:center"))
+  a <- Ci %*% (y3 + attr(y3, "scaled:center"))
   
   ### scale new inputs ###
   x <- t((t(x)-attr(fit3$X,"scaled:center")[1:d])/attr(fit3$X,"scaled:scale")[1:d])
   x.mu <- t((t(x.mu)-attr(fit3$X,"scaled:center")[d+1])/attr(fit3$X,"scaled:scale")[d+1])
   
   # mean
-  predy <- c(rep(0, length(x)))
+  predy <- c(rep(0, nrow(x)))
   
-  for(j in 1: length(x)){
+  for(j in 1: nrow(x)){
     predv <- c(rep(1,n))
     for(i in 1:n){
       for(m in 1:d){
@@ -99,9 +99,9 @@ closed2 <- function(x, fit1, fit2, fit3){ # fit1; first layer, fit2; second laye
   }
   
   # var
-  predsig2 <- c(rep(0, length(x)))
+  predsig2 <- c(rep(0, nrow(x)))
   
-  for(i in 1: length(x)){
+  for(i in 1: nrow(x)){
     mat <- matrix(1, n, n)
     for(k in 1:n){
       for(l in 1:n){

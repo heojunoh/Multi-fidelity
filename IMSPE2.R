@@ -4,54 +4,54 @@ library(laGP)
 source("GP.R")
 source("closed.R")
 
-IMSPE2 <- function(x, newx, fit1, fit2, fit3, mc.sample=10000){ 
-  # x; usually grid
-  # newx; new point which will be added
-  # fit1; first layer's emulator
-  # fit2; second layer's emulator f_M(X2, f1(x2))
-  # fit3; third layer's emulator f_H(X3, f_M(X3, f1(X3)))
-  x1.sample <- rnorm(mc.sample, mean=pred.GP(fit1, newx)$mu, sd=sqrt(pred.GP(fit1, newx)$sig2))
-  mu.cand1 <- mean(x1.sample) # f1(newx)
-  
-  fit1new <- GP(rbind(t(t(fit1$X)*attr(fit1$X, "scaled:scale")+attr(fit1$X, "scaled:center")), newx),
-                rbind(fit1$y*attr(fit1$y, "scaled:scale")+attr(fit1$y, "scaled:center"), mu.cand1))
-
-  x2.sample <- rnorm(mc.sample, 
-                     mean=pred.GP(fit2, cbind(newx, mu.cand1))$mu, 
-                     sd=sqrt(pred.GP(fit2, cbind(newx, mu.cand1))$sig2))
-  mu.cand2 <- mean(x2.sample) # f2(newx)
-  
-  fit2new <- GP(rbind(t(t(fit2$X)*attr(fit2$X, "scaled:scale")+attr(fit2$X, "scaled:center")), cbind(newx, mean(x1.sample))),
-                rbind(fit2$y*attr(fit2$y, "scaled:scale")+attr(fit2$y, "scaled:center"), mu.cand2))
-
-  return(mean(closed2(x, fit1new, fit2new, fit3)$sig2))
-}
+# IMSPE2 <- function(x, newx, fit1, fit2, fit3, mc.sample=10000){ 
+#   # x; usually grid
+#   # newx; new point which will be added
+#   # fit1; first layer's emulator
+#   # fit2; second layer's emulator f_M(X2, f1(x2))
+#   # fit3; third layer's emulator f_H(X3, f_M(X3, f1(X3)))
+#   x1.sample <- rnorm(mc.sample, mean=pred.GP(fit1, newx)$mu, sd=sqrt(pred.GP(fit1, newx)$sig2))
+#   mu.cand1 <- mean(x1.sample) # f1(newx)
+#   
+#   fit1new <- GP(rbind(t(t(fit1$X)*attr(fit1$X, "scaled:scale")+attr(fit1$X, "scaled:center")), newx),
+#                 rbind(fit1$y*attr(fit1$y, "scaled:scale")+attr(fit1$y, "scaled:center"), mu.cand1))
+# 
+#   x2.sample <- rnorm(mc.sample, 
+#                      mean=pred.GP(fit2, cbind(newx, mu.cand1))$mu, 
+#                      sd=sqrt(pred.GP(fit2, cbind(newx, mu.cand1))$sig2))
+#   mu.cand2 <- mean(x2.sample) # f2(newx)
+#   
+#   fit2new <- GP(rbind(t(t(fit2$X)*attr(fit2$X, "scaled:scale")+attr(fit2$X, "scaled:center")), cbind(newx, mean(x1.sample))),
+#                 rbind(fit2$y*attr(fit2$y, "scaled:scale")+attr(fit2$y, "scaled:center"), mu.cand2))
+# 
+#   return(mean(closed2(x, fit1new, fit2new, fit3)$sig2), fit1new=fit1new, fit2new=fit2new)
+# }
 
 IMSPE2fast <- function(x, newx, fit1, fit2, fit3, mc.sample=10000){ 
   ### This is updating Ki using Ki_{n+1}'s closed form ###
   # x; usually grid
-  # newx; new point which will be added, should be scalar
+  # newx; new point which will be added, should be n=1
   # fit1; first layer's emulator
   # fit2; second layer's emulator f_M(X2, f1(x2))
   # fit3; third layer's emulator f_H(X3, f_M(X3, f1(X3)))
   
   x1.sample <- rnorm(mc.sample, mean=pred.GP(fit1, newx)$mu, sd=sqrt(pred.GP(fit1, newx)$sig2))
-  mu.cand1 <- (mean(x1.sample)-attr(fit1$y,"scaled:center"))/attr(fit1$y,"scaled:scale") # f1(newx)
+  mu.cand1 <- mean(x1.sample)-attr(fit1$y,"scaled:center") # f1(newx)
   
   x2.sample <- rnorm(mc.sample, 
                      mean=pred.GP(fit2, cbind(newx, mu.cand1))$mu, 
                      sd=sqrt(pred.GP(fit2, cbind(newx, mu.cand1))$sig2))
-  mu.cand2 <- (mean(x2.sample)-attr(fit2$y,"scaled:center"))/attr(fit2$y,"scaled:scale") # f2(newx)
+  mu.cand2 <- mean(x2.sample)-attr(fit2$y,"scaled:center") # f2(newx)
   
   x.center1 <- attr(fit1$X, "scaled:center")
   x.scale1 <- attr(fit1$X, "scaled:scale")
   y.center1 <- attr(fit1$y, "scaled:center")
-  y.scale1 <- attr(fit1$y, "scaled:scale")
+  # y.scale1 <- attr(fit1$y, "scaled:scale")
   
   x.center2 <- attr(fit2$X, "scaled:center")
   x.scale2 <- attr(fit2$X, "scaled:scale")
   y.center2 <- attr(fit2$y, "scaled:center")
-  y.scale2 <- attr(fit2$y, "scaled:scale")
+  # y.scale2 <- attr(fit2$y, "scaled:scale")
   
   newx1 <- matrix((newx-attr(fit1$X,"scaled:center"))/attr(fit1$X,"scaled:scale")) 
   newx2 <- t((t(cbind(newx, mean(x1.sample)))-attr(fit2$X,"scaled:center"))/attr(fit2$X,"scaled:scale"))
@@ -71,7 +71,7 @@ IMSPE2fast <- function(x, newx, fit1, fit2, fit3, mc.sample=10000){
   
   fit1$y <- rbind(fit1$y, mu.cand1)
   attr(fit1$y, "scaled:center") <- y.center1
-  attr(fit1$y, "scaled:scale") <- y.scale1
+  # attr(fit1$y, "scaled:scale") <- y.scale1
   
   fit1$tau2hat <- drop(t(fit1$y) %*% fit1$Ki %*% fit1$y / length(fit1$y))
   
@@ -90,9 +90,9 @@ IMSPE2fast <- function(x, newx, fit1, fit2, fit3, mc.sample=10000){
   
   fit2$y <- rbind(fit2$y, mu.cand2)
   attr(fit2$y, "scaled:center") <- y.center2
-  attr(fit2$y, "scaled:scale") <- y.scale2
+  # attr(fit2$y, "scaled:scale") <- y.scale2
   
   fit2$tau2hat <- drop(t(fit2$y) %*% fit2$Ki %*% fit2$y / length(fit2$y))
   
-  return(mean(closed2(x, fit1, fit2, fit3)$sig2))
+  return(list(IMSPE=mean(closed2(x, fit1, fit2, fit3)$sig2), fit1new=fit1, fit2new=fit2))
 }

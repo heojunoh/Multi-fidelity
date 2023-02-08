@@ -10,7 +10,7 @@ GP <- function(X, y, g=eps, Xscale=TRUE, Yscale=TRUE){
   }
   
   n <- length(y)
-  if(Yscale) y <- scale(y, center=TRUE, scale=TRUE)
+  if(Yscale) y <- scale(y, center=TRUE, scale=FALSE)
   
   nlsep <- function(par, X, Y) 
   {
@@ -23,11 +23,30 @@ GP <- function(X, y, g=eps, Xscale=TRUE, Yscale=TRUE){
     return(drop(-ll))
   }
   
-  outg <- optim(c(rep(1, ncol(X))), nlsep, method="L-BFGS-B", 
-                lower=c(rep(0.1*sqrt(ncol(X)), ncol(X))), upper=c(rep(100000*sqrt(ncol(X)), ncol(X))), X=X, Y=y) 
+  # gradnlsep <- function(par, X, Y)
+  # {
+  #   theta <- par
+  #   n <- length(Y) 
+  #   K <- covar.sep(X, d=theta, g=g) 
+  #   Ki <- solve(K) 
+  #   KiY <- Ki %*% Y 
+  #   
+  #   ## loop over theta components 
+  #   dlltheta <- rep(NA, length(theta)) 
+  #   for(k in 1:length(dlltheta)){ 
+  #     dotK <- K *distance(X[,k])/(theta[k]^2) 
+  #     dlltheta[k] <- (n/2) *t(KiY) %*% dotK %*% KiY / (t(Y) %*% KiY) - (1/2)*sum(diag(Ki %*% dotK)) 
+  #   } 
+  #   
+  #   return(-c(dlltheta)) 
+  # }
+  
+  outg <- optim(c(rep(1, ncol(X))), nlsep, #gradnlsep, 
+                method="L-BFGS-B", lower=c(rep(0.1*sqrt(ncol(X)), ncol(X))), 
+                upper=c(rep(1000000*sqrt(ncol(X)), ncol(X))), X=X, Y=y) 
   
   K <- covar.sep(X, d=outg$par, g=g)
-  Ki <- solve(K+diag(g,n))
+  Ki <- solve(K)
   tau2hat <- drop(t(y) %*% Ki %*% y / n)
   
   return(list(theta = outg$par, g=g, Ki=Ki, X = X, y = y, tau2hat=tau2hat, Xscale=Xscale, Yscale=Yscale))
@@ -51,7 +70,7 @@ pred.GP <- function(fit, xnew){
   KXX <- covar.sep(xnew, d=theta, g=g) 
   KX <- covar.sep(xnew, X, d=theta, g=0)
   
-  if(Yscale) mup2 <- KX %*% Ki %*% (y * attr(y, "scaled:scale") + attr(y, "scaled:center")) else mup2 <- KX %*% Ki %*% y
+  if(Yscale) mup2 <- KX %*% Ki %*% (y + attr(y, "scaled:center")) else mup2 <- KX %*% Ki %*% y
   Sigmap2 <- pmax(0, diag(tau2hat*(KXX - KX %*% Ki %*% t(KX))))
   
   return(list(mu=mup2, sig2=Sigmap2))
