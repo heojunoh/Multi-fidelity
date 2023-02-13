@@ -13,8 +13,8 @@ fl <- function(x, l){
 }
 
 ### training data ###
-n1 <- 20; n2 <- 13; n3 <- 8
-set.seed(9)
+n1 <- 15; n2 <- 13; n3 <- 11
+set.seed(1)
 X3 <- maximinLHS(n3, 1) # x^H
 y3 <- fl(X3, l=5)
 X2 <- matrix(c(X3, maximinLHS(n2-n3, 1))) # x^M
@@ -152,10 +152,30 @@ lines(x, mx2-1.96*sqrt(koh.var2*length(y3)/(length(y3)-2)), col=7, lty=2)
 curve(fl(x,l=5),add=TRUE, col=1,lwd=2,lty=2) # high fidelity(TRUE); Black
 
 ### RMSE ###
+sqrt(mean((pred3$mu-fl(x, l=5))^2)) # single fidelity
 sqrt(mean((predy-fl(x, l=5))^2)) # closed form
 sqrt(mean((pred3new$mu-fl(x, l=5))^2)) # not closed form
-sqrt(mean((pred3$mu-fl(x, l=5))^2)) # single fidelity
 sqrt(mean((mx2-fl(x, l=5))^2)) # KOH
+
+mean(score(fl(x, l=5), pred3$mu, pred3$sig2)) # single fidelity
+mean(score(fl(x, l=5), predy, predsig2)) # closed form
+mean(score(fl(x, l=5), pred3new$mu, pred3new$sig2)) # not closed form
+mean(score(fl(x, l=5), mx2, koh.var2)) # KOH
+
+median(score(fl(x, l=5), pred3$mu, pred3$sig2)) # single fidelity
+median(score(fl(x, l=5), predy, predsig2)) # closed form
+median(score(fl(x, l=5), pred3new$mu, pred3new$sig2)) # not closed form
+median(score(fl(x, l=5), mx2, koh.var2)) # KOH
+
+mean(crps(fl(x, l=5), pred3$mu, pred3$sig2)) # single fidelity
+mean(crps(fl(x, l=5), predy, predsig2)) # closed form
+mean(crps(fl(x, l=5), pred3new$mu, pred3new$sig2)) # not closed form
+mean(crps(fl(x, l=5), mx2, koh.var2)) # KOH
+
+median(crps(fl(x, l=5), pred3$mu, pred3$sig2)) # single fidelity
+median(crps(fl(x, l=5), predy, predsig2)) # closed form
+median(crps(fl(x, l=5), pred3new$mu, pred3new$sig2)) # not closed form
+median(crps(fl(x, l=5), mx2, koh.var2)) # KOH
 
 
 sum(predsig2)

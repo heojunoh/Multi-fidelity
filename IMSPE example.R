@@ -16,7 +16,7 @@ fl <- function(x, l){
 }
 
 ### training data ###
-n1 <- 20; n2 <- 13; n3 <- 8
+n1 <- 8; n2 <- 7; n3 <- 6
 set.seed(1)
 X3 <- maximinLHS(n3, 1) # x^H
 y3 <- fl(X3, l=5)
@@ -120,6 +120,11 @@ which.max(alcfast/c(1,(1+10),(1+10+100)))
 alcfast/c(1,(1+10),(1+10+100))
 
 
+chosen <- matrix(0, ncol=2)
+chosen[1,1] <- which.max(alcfast/c(1,(1+2),(1+2+3)))
+chosen[1,2] <- which.min(cbind(Icand1fast, Icand2fast, Icand3fast)[,chosen[1,1]])
+
+
 ### Plotting the chosen point ###
 plot(x, predy, type="l", lwd=2, col=3, 
      ylim=range(c(predy+1.96*sqrt(predsig2*length(y3)/(length(y3)-2)), predy-1.96*sqrt(predsig2*length(y3)/(length(y3)-2))
@@ -129,17 +134,20 @@ lines(x, predy-1.96*sqrt(predsig2*length(y3)/(length(y3)-2)), col=3, lty=2)
 
 curve(fl(x,l=5),add=TRUE, col=1,lwd=2,lty=2) # high fidelity(TRUE); Black
 
-points(g[which.min(Icand1fast)], predy[which.min(Icand1fast)], pch="1", col="red")
-points(g[which.min(Icand2fast)], predy[which.min(Icand2fast)], pch="2", col="red")
-points(g[which.min(Icand3fast)], predy[which.min(Icand3fast)], pch="3", col="red")
+points(X1, y1, pch="1", col="red")
+points(X2, y2, pch="2", col="red")
+points(X3, y3, pch="3", col="red")
 
+text(g[which.min(Icand1fast)], predy[which.min(Icand1fast)], expression("1*"), col="red")
+text(g[which.min(Icand2fast)], predy[which.min(Icand2fast)], expression("2*"), col="red")
+text(g[which.min(Icand3fast)], predy[which.min(Icand3fast)], expression("3*"), col="red")
 
 
 
 #################
 ### Add point ###
 #################
-Iselect <- IMSPE3fast(g, g[which.min(Icand3fast)], fit.GP1, fit.GP2new, fit.GP3new)
+Iselect <- IMSPE1select(g, g[which.min(Icand1fast)], fit.GP1, fit.GP2new, fit.GP3new)
 
 ### closed ###
 predy <- closed2(x, Iselect$fit1new, Iselect$fit2new, Iselect$fit3new)$mu
@@ -160,14 +168,23 @@ Icand2fast <- c(rep(0, length(g))) # IMSPE candidates
 Icand3fast <- c(rep(0, length(g))) # IMSPE candidates
 
 for(i in 1:length(Icand1fast)){ # no true, no need to fit just pred
-  Icand1fast[i] <- IMSPE1fast(g, g[i], Iselect$fit1new, Iselect$fit2new, Iselect$fit3new)$IMSPE
+  if(any(chosen[,2]==i)){Icand1fast[i] <- 0}else{
+    Icand1fast[i] <- IMSPE1fast(g, g[i], Iselect$fit1new, Iselect$fit2new, Iselect$fit3new)$IMSPE
+  }
 }
 for(i in 1:length(Icand2fast)){ # no true, no need to fit just pred
-  Icand2fast[i] <- IMSPE2fast(g, g[i], Iselect$fit1new, Iselect$fit2new, Iselect$fit3new)$IMSPE
+  if(any(chosen[,2]==i)){Icand2fast[i] <- 0}else{
+    Icand2fast[i] <- IMSPE2fast(g, g[i], Iselect$fit1new, Iselect$fit2new, Iselect$fit3new)$IMSPE
+  }
 }
 for(i in 1:length(Icand3fast)){ # no true, no need to fit just pred
-  Icand3fast[i] <- IMSPE3fast(g, g[i], Iselect$fit1new, Iselect$fit2new, Iselect$fit3new)$IMSPE
+  if(any(chosen[,2]==i)){Icand3fast[i] <- 0}else{
+    Icand3fast[i] <- IMSPE3fast(g, g[i], Iselect$fit1new, Iselect$fit2new, Iselect$fit3new)$IMSPE
+  }
 }
+if(any(Icand1fast==0)){Icand1fast[which(Icand1fast==0)] <-  max(Icand1fast)}
+if(any(Icand2fast==0)){Icand2fast[which(Icand2fast==0)] <-  max(Icand2fast)}
+if(any(Icand3fast==0)){Icand3fast[which(Icand3fast==0)] <-  max(Icand3fast)}
 
 plot(g, Icand1fast, type="l", lwd=2, col=3, ylim=range(Icand1fast))
 plot(g, Icand2fast, type="l", lwd=2, col=3, ylim=range(Icand2fast))
@@ -191,6 +208,9 @@ which.max(alcfast/c(1,(1+10),(1+10+100)))
 alcfast/c(1,(1+10),(1+10+100))
 
 
+chosen <- rbind(chosen, c(which.max(alcfast/c(1,(1+2),(1+2+3))), which.min(cbind(Icand1fast, Icand2fast, Icand3fast)[,which.max(alcfast/c(1,(1+2),(1+2+3)))])))
+
+
 ### Plotting the chosen point ###
 plot(x, predy, type="l", lwd=2, col=3, 
      ylim=range(c(predy+1.96*sqrt(predsig2*length(y3)/(length(y3)-2)), predy-1.96*sqrt(predsig2*length(y3)/(length(y3)-2))
@@ -200,17 +220,20 @@ lines(x, predy-1.96*sqrt(predsig2*length(y3)/(length(y3)-2)), col=3, lty=2)
 
 curve(fl(x,l=5),add=TRUE, col=1,lwd=2,lty=2) # high fidelity(TRUE); Black
 
-points(g[which.min(Icand1fast)], predy[which.min(Icand1fast)], pch="1", col="red")
-points(g[which.min(Icand2fast)], predy[which.min(Icand2fast)], pch="2", col="red")
-points(g[which.min(Icand3fast)], predy[which.min(Icand3fast)], pch="3", col="red")
+points(X1, y1, pch="1", col="red")
+points(X2, y2, pch="2", col="red")
+points(X3, y3, pch="3", col="red")
 
+text(g[which.min(Icand1fast)], predy[which.min(Icand1fast)], expression("1*"), col="red")
+text(g[which.min(Icand2fast)], predy[which.min(Icand2fast)], expression("2*"), col="red")
+text(g[which.min(Icand3fast)], predy[which.min(Icand3fast)], expression("3*"), col="red")
 
 
 
 #################
-### Add point after 1 ###
+### Add point after 1 at 1###
 #################
-Iselect <- IMSPE3fast(g, g[which.min(Icand3fast)], Iselect$fit1new, Iselect$fit2new, Iselect$fit3new)
+Iselect <- IMSPE1select(g, g[which.min(Icand1fast)], Iselect$fit1new, Iselect$fit2new, Iselect$fit3new)
 
 ### closed ###
 predy <- closed2(x, Iselect$fit1new, Iselect$fit2new, Iselect$fit3new)$mu
@@ -232,14 +255,23 @@ Icand2fast <- c(rep(0, length(g))) # IMSPE candidates
 Icand3fast <- c(rep(0, length(g))) # IMSPE candidates
 
 for(i in 1:length(Icand1fast)){ # no true, no need to fit just pred
-  Icand1fast[i] <- IMSPE1fast(g, g[i], Iselect$fit1new, Iselect$fit2new, Iselect$fit3new)$IMSPE
+  if(any(chosen[,2]==i)){Icand1fast[i] <- 0}else{
+    Icand1fast[i] <- IMSPE1fast(g, g[i], Iselect$fit1new, Iselect$fit2new, Iselect$fit3new)$IMSPE
+  }
 }
 for(i in 1:length(Icand2fast)){ # no true, no need to fit just pred
-  Icand2fast[i] <- IMSPE2fast(g, g[i], Iselect$fit1new, Iselect$fit2new, Iselect$fit3new)$IMSPE
+  if(any(chosen[,2]==i)){Icand2fast[i] <- 0}else{
+    Icand2fast[i] <- IMSPE2fast(g, g[i], Iselect$fit1new, Iselect$fit2new, Iselect$fit3new)$IMSPE
+  }
 }
 for(i in 1:length(Icand3fast)){ # no true, no need to fit just pred
-  Icand3fast[i] <- IMSPE3fast(g, g[i], Iselect$fit1new, Iselect$fit2new, Iselect$fit3new)$IMSPE
+  if(any(chosen[,2]==i)){Icand3fast[i] <- 0}else{
+    Icand3fast[i] <- IMSPE3fast(g, g[i], Iselect$fit1new, Iselect$fit2new, Iselect$fit3new)$IMSPE
+  }
 }
+if(any(Icand1fast==0)){Icand1fast[which(Icand1fast==0)] <-  max(Icand1fast)}
+if(any(Icand2fast==0)){Icand2fast[which(Icand2fast==0)] <-  max(Icand2fast)}
+if(any(Icand3fast==0)){Icand3fast[which(Icand3fast==0)] <-  max(Icand3fast)}
 
 plot(g, Icand1fast, type="l", lwd=2, col=3, ylim=range(Icand1fast))
 plot(g, Icand2fast, type="l", lwd=2, col=3, ylim=range(Icand2fast))
@@ -263,6 +295,9 @@ which.max(alcfast/c(1,(1+10),(1+10+100)))
 alcfast/c(1,(1+10),(1+10+100))
 
 
+chosen <- rbind(chosen, c(which.max(alcfast/c(1,(1+2),(1+2+3))), which.min(cbind(Icand1fast, Icand2fast, Icand3fast)[,which.max(alcfast/c(1,(1+2),(1+2+3)))])))
+
+
 ### Plotting the chosen point ###
 plot(x, predy, type="l", lwd=2, col=3, 
      ylim=range(c(predy+1.96*sqrt(predsig2*length(y3)/(length(y3)-2)), predy-1.96*sqrt(predsig2*length(y3)/(length(y3)-2))
@@ -272,23 +307,190 @@ lines(x, predy-1.96*sqrt(predsig2*length(y3)/(length(y3)-2)), col=3, lty=2)
 
 curve(fl(x,l=5),add=TRUE, col=1,lwd=2,lty=2) # high fidelity(TRUE); Black
 
-points(g[which.min(Icand1fast)], predy[which.min(Icand1fast)], pch="1", col="red")
-points(g[which.min(Icand2fast)], predy[which.min(Icand2fast)], pch="2", col="red")
-points(g[which.min(Icand3fast)], predy[which.min(Icand3fast)], pch="3", col="red")
+points(X1, y1, pch="1", col="red")
+points(X2, y2, pch="2", col="red")
+points(X3, y3, pch="3", col="red")
+
+text(g[which.min(Icand1fast)], predy[which.min(Icand1fast)], expression("1*"), col="red")
+text(g[which.min(Icand2fast)], predy[which.min(Icand2fast)], expression("2*"), col="red")
+text(g[which.min(Icand3fast)], predy[which.min(Icand3fast)], expression("3*"), col="red")
+
+
+
+
+#################
+### Add point at level 2 ###
+#################
+Iselect <- IMSPE2select(g, g[which.min(Icand2fast)], Iselect$fit1new, Iselect$fit2new, Iselect$fit3new)
+
+### closed ###
+predy <- closed2(x, Iselect$fit1new, Iselect$fit2new, Iselect$fit3new)$mu
+predsig2 <- closed2(x, Iselect$fit1new, Iselect$fit2new, Iselect$fit3new)$sig2
+
+### RMSE ###  0.07955958 -> 0.07413344 -> 0.07420309 -> 0.07138561 -> 0.07247886
+sqrt(mean((predy-fl(x, l=5))^2)) # closed form
+
+#############
+### IMSPE ###
+#############
+g <- seq(0,1,0.01) # more than 1-dim, use expand.grid()
+Icurrent <- mean(closed2(g, Iselect$fit1new, Iselect$fit2new, Iselect$fit3new)$sig2) 
+# current IMSPE, 0.002260122 -> 0.00084703 -> 0.0004360591 -> 0.0001520631 -> 0.0001400953
+
+### Add 1 points to the low-fidelity data ###
+Icand1fast <- c(rep(0, length(g))) # IMSPE candidates
+Icand2fast <- c(rep(0, length(g))) # IMSPE candidates
+Icand3fast <- c(rep(0, length(g))) # IMSPE candidates
+
+for(i in 1:length(Icand1fast)){ # no true, no need to fit just pred
+  if(any(chosen[,2]==i)){Icand1fast[i] <- 0}else{
+    Icand1fast[i] <- IMSPE1fast(g, g[i], Iselect$fit1new, Iselect$fit2new, Iselect$fit3new)$IMSPE
+  }
+}
+for(i in 1:length(Icand2fast)){ # no true, no need to fit just pred
+  if(any(chosen[,2]==i)){Icand2fast[i] <- 0}else{
+    Icand2fast[i] <- IMSPE2fast(g, g[i], Iselect$fit1new, Iselect$fit2new, Iselect$fit3new)$IMSPE
+  }
+}
+for(i in 1:length(Icand3fast)){ # no true, no need to fit just pred
+  if(any(chosen[,2]==i)){Icand3fast[i] <- 0}else{
+    Icand3fast[i] <- IMSPE3fast(g, g[i], Iselect$fit1new, Iselect$fit2new, Iselect$fit3new)$IMSPE
+  }
+}
+if(any(Icand1fast==0)){Icand1fast[which(Icand1fast==0)] <-  max(Icand1fast)}
+if(any(Icand2fast==0)){Icand2fast[which(Icand2fast==0)] <-  max(Icand2fast)}
+if(any(Icand3fast==0)){Icand3fast[which(Icand3fast==0)] <-  max(Icand3fast)}
+
+plot(g, Icand1fast, type="l", lwd=2, col=3, ylim=range(Icand1fast))
+plot(g, Icand2fast, type="l", lwd=2, col=3, ylim=range(Icand2fast))
+plot(g, Icand3fast, type="l", lwd=2, col=3, ylim=range(Icand3fast))
+
+which.min(Icand1fast)
+which.min(Icand2fast)
+which.min(Icand3fast)
+
+### Fast update; Equation 6.6. in Surrogates ###
+### ALC; How much can be improved. Equation 6.6. in Surrogates ###
+alcfast <- c(Icurrent - Icand1fast[which.min(Icand1fast)], Icurrent - Icand2fast[which.min(Icand2fast)], Icurrent - Icand3fast[which.min(Icand3fast)] )
+alcfast
+
+### cost; 1, 2, 3 ###
+which.max(alcfast/c(1,(1+2),(1+2+3)))
+alcfast/c(1,(1+2),(1+2+3))
+
+### cost; 1, 10, 100 ###
+which.max(alcfast/c(1,(1+10),(1+10+100)))
+alcfast/c(1,(1+10),(1+10+100))
+
+
+chosen <- rbind(chosen, c(which.max(alcfast/c(1,(1+2),(1+2+3))), which.min(cbind(Icand1fast, Icand2fast, Icand3fast)[,which.max(alcfast/c(1,(1+2),(1+2+3)))])))
+
+
+### Plotting the chosen point ###
+plot(x, predy, type="l", lwd=2, col=3, 
+     ylim=range(c(predy+1.96*sqrt(predsig2*length(y3)/(length(y3)-2)), predy-1.96*sqrt(predsig2*length(y3)/(length(y3)-2))
+     ))) 
+lines(x, predy+1.96*sqrt(predsig2*length(y3)/(length(y3)-2)), col=3, lty=2)
+lines(x, predy-1.96*sqrt(predsig2*length(y3)/(length(y3)-2)), col=3, lty=2)
+
+curve(fl(x,l=5),add=TRUE, col=1,lwd=2,lty=2) # high fidelity(TRUE); Black
+
+points(X1, y1, pch="1", col="red")
+points(X2, y2, pch="2", col="red")
+points(X3, y3, pch="3", col="red")
+
+text(g[which.min(Icand1fast)], predy[which.min(Icand1fast)], expression("1*"), col="red")
+text(g[which.min(Icand2fast)], predy[which.min(Icand2fast)], expression("2*"), col="red")
+text(g[which.min(Icand3fast)], predy[which.min(Icand3fast)], expression("3*"), col="red")
 
 
 
 
 
+#################
+### Add point at level 3 ###
+#################
+Iselect <- IMSPE3select(g, g[which.min(Icand3fast)], Iselect$fit1new, Iselect$fit2new, Iselect$fit3new)
+
+### closed ###
+predy <- closed2(x, Iselect$fit1new, Iselect$fit2new, Iselect$fit3new)$mu
+predsig2 <- closed2(x, Iselect$fit1new, Iselect$fit2new, Iselect$fit3new)$sig2
+
+### RMSE ###  0.07955958 -> 0.07413344 -> 0.07420309 -> 0.07138561 -> 0.07247886
+sqrt(mean((predy-fl(x, l=5))^2)) # closed form
+
+#############
+### IMSPE ###
+#############
+g <- seq(0,1,0.01) # more than 1-dim, use expand.grid()
+Icurrent <- mean(closed2(g, Iselect$fit1new, Iselect$fit2new, Iselect$fit3new)$sig2) 
+# current IMSPE, 0.002260122 -> 0.00084703 -> 0.0004360591 -> 0.0001520631 -> 0.0001400953
+
+### Add 1 points to the low-fidelity data ###
+Icand1fast <- c(rep(0, length(g))) # IMSPE candidates
+Icand2fast <- c(rep(0, length(g))) # IMSPE candidates
+Icand3fast <- c(rep(0, length(g))) # IMSPE candidates
+
+for(i in 1:length(Icand1fast)){ # no true, no need to fit just pred
+  if(any(chosen[,2]==i)){Icand1fast[i] <- 0}else{
+    Icand1fast[i] <- IMSPE1fast(g, g[i], Iselect$fit1new, Iselect$fit2new, Iselect$fit3new)$IMSPE
+  }
+}
+for(i in 1:length(Icand2fast)){ # no true, no need to fit just pred
+  if(any(chosen[,2]==i)){Icand2fast[i] <- 0}else{
+    Icand2fast[i] <- IMSPE2fast(g, g[i], Iselect$fit1new, Iselect$fit2new, Iselect$fit3new)$IMSPE
+  }
+}
+for(i in 1:length(Icand3fast)){ # no true, no need to fit just pred
+  if(any(chosen[,2]==i)){Icand3fast[i] <- 0}else{
+    Icand3fast[i] <- IMSPE3fast(g, g[i], Iselect$fit1new, Iselect$fit2new, Iselect$fit3new)$IMSPE
+  }
+}
+if(any(Icand1fast==0)){Icand1fast[which(Icand1fast==0)] <-  max(Icand1fast)}
+if(any(Icand2fast==0)){Icand2fast[which(Icand2fast==0)] <-  max(Icand2fast)}
+if(any(Icand3fast==0)){Icand3fast[which(Icand3fast==0)] <-  max(Icand3fast)}
+
+plot(g, Icand1fast, type="l", lwd=2, col=3, ylim=range(Icand1fast))
+plot(g, Icand2fast, type="l", lwd=2, col=3, ylim=range(Icand2fast))
+plot(g, Icand3fast, type="l", lwd=2, col=3, ylim=range(Icand3fast))
+
+which.min(Icand1fast)
+which.min(Icand2fast)
+which.min(Icand3fast)
+
+### Fast update; Equation 6.6. in Surrogates ###
+### ALC; How much can be improved. Equation 6.6. in Surrogates ###
+alcfast <- c(Icurrent - Icand1fast[which.min(Icand1fast)], Icurrent - Icand2fast[which.min(Icand2fast)], Icurrent - Icand3fast[which.min(Icand3fast)] )
+alcfast
+
+### cost; 1, 2, 3 ###
+which.max(alcfast/c(1,(1+2),(1+2+3)))
+alcfast/c(1,(1+2),(1+2+3))
+
+### cost; 1, 10, 100 ###
+which.max(alcfast/c(1,(1+10),(1+10+100)))
+alcfast/c(1,(1+10),(1+10+100))
 
 
+chosen <- rbind(chosen, c(which.max(alcfast/c(1,(1+2),(1+2+3))), which.min(cbind(Icand1fast, Icand2fast, Icand3fast)[,which.max(alcfast/c(1,(1+2),(1+2+3)))])))
 
 
+### Plotting the chosen point ###
+plot(x, predy, type="l", lwd=2, col=3, 
+     ylim=range(c(predy+1.96*sqrt(predsig2*length(y3)/(length(y3)-2)), predy-1.96*sqrt(predsig2*length(y3)/(length(y3)-2))
+     ))) 
+lines(x, predy+1.96*sqrt(predsig2*length(y3)/(length(y3)-2)), col=3, lty=2)
+lines(x, predy-1.96*sqrt(predsig2*length(y3)/(length(y3)-2)), col=3, lty=2)
 
+curve(fl(x,l=5),add=TRUE, col=1,lwd=2,lty=2) # high fidelity(TRUE); Black
 
+points(X1, y1, pch="1", col="red")
+points(X2, y2, pch="2", col="red")
+points(X3, y3, pch="3", col="red")
 
-
-
+text(g[which.min(Icand1fast)], predy[which.min(Icand1fast)], expression("1*"), col="red")
+text(g[which.min(Icand2fast)], predy[which.min(Icand2fast)], expression("2*"), col="red")
+text(g[which.min(Icand3fast)], predy[which.min(Icand3fast)], expression("3*"), col="red")
 
 
 

@@ -38,7 +38,7 @@ boreholelow <- function(xx)
   L  <- xx[7]
   Kw <- xx[8]
   
-  frac1 <- 5 * Tu * (Hu-Hl)
+  frac1 <- 5 * Tu * (Hu-Hl) + (Tu * Kw) # Tu * Kw is added
   
   frac2a <- 2*L*Tu / (log(r/rw)*rw^2*Kw)
   frac2b <- Tu / Tl
@@ -79,12 +79,13 @@ y1 <- apply(X1,1,outputlow.f)
 ### model fitting for f1 ###
 eps <- sqrt(.Machine$double.eps)
 fit.GP1 <- GP(X1, y1)
+fit.GP1$theta
 
 ### model fitting using (x2, f1(x2)) ###
 w1.x2 <- pred.GP(fit.GP1, X2)$mu # can interpolate; nested
 X2new <- cbind(X2, w1.x2) # combine (X2, f1(x2)) 
 fit.GP2new <- GP(X2new, y2) # model fitting for f_M(X2, f1(x2))
-
+fit.GP2new$theta
 
 ### test data ###
 x <- maximinLHS(100, d)
@@ -138,6 +139,26 @@ sqrt(mean((predy-apply(x,1,output.f))^2)) # closed form
 sqrt(mean((pred2new$mu-apply(x,1,output.f))^2)) # not closed form
 sqrt(mean((pred2$mu-apply(x,1,output.f))^2)) # single fidelity
 sqrt(mean((mx1-apply(x,1,output.f))^2)) # KOH
+
+mean(score(apply(x,1,output.f), pred2$mu, pred2$sig2)) # single fidelity
+mean(score(apply(x,1,output.f), predy, predsig2)) # closed form
+mean(score(apply(x,1,output.f), pred2new$mu, pred2new$sig2)) # not closed form
+mean(score(apply(x,1,output.f), mx1, koh.var1)) # KOH
+
+median(score(apply(x,1,output.f), pred2$mu, pred2$sig2)) # single fidelity
+median(score(apply(x,1,output.f), predy, predsig2)) # closed form
+median(score(apply(x,1,output.f), pred2new$mu, pred2new$sig2)) # not closed form
+median(score(apply(x,1,output.f), mx1, koh.var1)) # KOH
+
+mean(crps(apply(x,1,output.f), pred2$mu, pred2$sig2)) # single fidelity
+mean(crps(apply(x,1,output.f), predy, predsig2)) # closed form
+mean(crps(apply(x,1,output.f), pred2new$mu, pred2new$sig2)) # not closed form
+mean(crps(apply(x,1,output.f), mx1, koh.var1)) # KOH
+
+median(crps(apply(x,1,output.f), pred2$mu, pred2$sig2)) # single fidelity
+median(crps(apply(x,1,output.f), predy, predsig2)) # closed form
+median(crps(apply(x,1,output.f), pred2new$mu, pred2new$sig2)) # not closed form
+median(crps(apply(x,1,output.f), mx1, koh.var1)) # KOH
 
 
 sum(predsig2)
