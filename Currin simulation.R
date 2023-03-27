@@ -4,6 +4,7 @@ library(laGP)
 source("GP.R")
 source("KOH.R")
 source("closed.R")
+source("score.R")
 
 ### synthetic function ###
 curretal88exp <- function(xx)

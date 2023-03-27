@@ -37,7 +37,7 @@ source("closed.R")
 # }
 
 
-IMSPE3fast <- function(x, newx, fit1, fit2, fit3, mc.sample=10000){ 
+IMSPE3fast <- function(x, newx, fit1, fit2, fit3, mc.sample=10000, constant=FALSE){ 
   ### This is updating Ki using Ki_{n+1}'s closed form ###
   # x; usually grid
   # newx; new point which will be added, should be n=1
@@ -46,17 +46,17 @@ IMSPE3fast <- function(x, newx, fit1, fit2, fit3, mc.sample=10000){
   # fit3; third layer's emulator f_H(X3, f_M(X3, f1(X3)))
   
   x1.sample <- rnorm(mc.sample, mean=pred.GP(fit1, newx)$mu, sd=sqrt(pred.GP(fit1, newx)$sig2))
-  mu.cand1 <- mean(x1.sample)-attr(fit1$y,"scaled:center") # f1(newx)
+  mu.cand1 <- mean(x1.sample) # f1(newx)
   
   x2.sample <- rnorm(mc.sample, 
                      mean=pred.GP(fit2, cbind(newx, mu.cand1))$mu, 
                      sd=sqrt(pred.GP(fit2, cbind(newx, mu.cand1))$sig2))
-  mu.cand2 <- mean(x2.sample)-attr(fit2$y,"scaled:center") # f2(newx)  
+  mu.cand2 <- mean(x2.sample) # f2(newx)  
   
   x3.sample <- rnorm(mc.sample, 
                      mean=pred.GP(fit3, cbind(newx, mu.cand2))$mu, 
                      sd=sqrt(pred.GP(fit3, cbind(newx, mu.cand2))$sig2))
-  mu.cand3 <- mean(x3.sample)-attr(fit3$y,"scaled:center") # f2(newx)
+  mu.cand3 <- mean(x3.sample) # f2(newx)
   
   x.center1 <- attr(fit1$X, "scaled:center")
   x.scale1 <- attr(fit1$X, "scaled:scale")
@@ -90,9 +90,13 @@ IMSPE3fast <- function(x, newx, fit1, fit2, fit3, mc.sample=10000){
   attr(fit1$X, "scaled:center") <- x.center1
   attr(fit1$X, "scaled:scale") <- x.scale1
   
-  fit1$y <- rbind(fit1$y, mu.cand1)
-  attr(fit1$y, "scaled:center") <- y.center1
-  # attr(fit1$y, "scaled:scale") <- y.scale1
+  if(constant){
+    fit1$y <- rbind(fit1$y, mu.cand1)
+  }else{
+    fit1$y <- rbind(fit1$y, mu.cand1-attr(fit1$y,"scaled:center"))
+    attr(fit1$y, "scaled:center") <- y.center1
+    # attr(fit1$y, "scaled:scale") <- y.scale1
+  }
   
   fit1$tau2hat <- drop(t(fit1$y) %*% fit1$Ki %*% fit1$y / length(fit1$y))
   
@@ -109,9 +113,13 @@ IMSPE3fast <- function(x, newx, fit1, fit2, fit3, mc.sample=10000){
   attr(fit2$X, "scaled:center") <- x.center2
   attr(fit2$X, "scaled:scale") <- x.scale2
   
-  fit2$y <- rbind(fit2$y, mu.cand2)
-  attr(fit2$y, "scaled:center") <- y.center2
-  # attr(fit2$y, "scaled:scale") <- y.scale2
+  if(constant){
+    fit2$y <- rbind(fit2$y, mu.cand2)
+  }else{
+    fit2$y <- rbind(fit2$y, mu.cand2-attr(fit2$y,"scaled:center"))
+    attr(fit2$y, "scaled:center") <- y.center2
+    # attr(fit2$y, "scaled:scale") <- y.scale2
+  }
   
   fit2$tau2hat <- drop(t(fit2$y) %*% fit2$Ki %*% fit2$y / length(fit2$y))  
   
@@ -128,17 +136,25 @@ IMSPE3fast <- function(x, newx, fit1, fit2, fit3, mc.sample=10000){
   attr(fit3$X, "scaled:center") <- x.center3
   attr(fit3$X, "scaled:scale") <- x.scale3
   
-  fit3$y <- rbind(fit3$y, mu.cand3)
-  attr(fit3$y, "scaled:center") <- y.center3
-  # attr(fit3$y, "scaled:scale") <- y.scale3
+  if(constant){
+    fit3$y <- rbind(fit3$y, mu.cand3)
+  }else{
+    fit3$y <- rbind(fit3$y, mu.cand3-attr(fit3$y,"scaled:center"))
+    attr(fit3$y, "scaled:center") <- y.center3
+    # attr(fit3$y, "scaled:scale") <- y.scale3
+  }
   
   fit3$tau2hat <- drop(t(fit3$y) %*% fit3$Ki %*% fit3$y / length(fit3$y))
   
-  return(list(IMSPE=mean(closed2(x, fit1, fit2, fit3)$sig2), fit1new=fit1, fit2new=fit2, fit3new=fit3))
+  if(constant){
+    return(list(IMSPE=mean(closed2(x, fit1, fit2, fit3, constant=TRUE)$sig2), fit1new=fit1, fit2new=fit2, fit3new=fit3))
+  }else{
+    return(list(IMSPE=mean(closed2(x, fit1, fit2, fit3)$sig2), fit1new=fit1, fit2new=fit2, fit3new=fit3))
+  }
 }
 
 
-IMSPE3select <- function(x, newx, fit1, fit2, fit3, mc.sample=10000){ 
+IMSPE3select <- function(x, newx, fit1, fit2, fit3, mc.sample=10000, constant=FALSE){ 
   ### This is updating Ki using Ki_{n+1}'s closed form ###
   # x; usually grid
   # newx; new point which will be added, should be n=1
@@ -146,9 +162,9 @@ IMSPE3select <- function(x, newx, fit1, fit2, fit3, mc.sample=10000){
   # fit2; second layer's emulator f_M(X2, f1(x2))
   # fit3; third layer's emulator f_H(X3, f_M(X3, f1(X3)))
   
-  y1.select <- fl(newx, l=1)-attr(fit1$y,"scaled:center")
-  y2.select <- fl(newx, l=3)-attr(fit2$y,"scaled:center")
-  y3.select <- fl(newx, l=5)-attr(fit3$y,"scaled:center")
+  y1.select <- fl(newx, l=1)
+  y2.select <- fl(newx, l=3)
+  y3.select <- fl(newx, l=5)
   
   x.center1 <- attr(fit1$X, "scaled:center")
   x.scale1 <- attr(fit1$X, "scaled:scale")
@@ -182,9 +198,13 @@ IMSPE3select <- function(x, newx, fit1, fit2, fit3, mc.sample=10000){
   attr(fit1$X, "scaled:center") <- x.center1
   attr(fit1$X, "scaled:scale") <- x.scale1
   
-  fit1$y <- rbind(fit1$y, y1.select)
-  attr(fit1$y, "scaled:center") <- y.center1
-  # attr(fit1$y, "scaled:scale") <- y.scale1
+  if(constant){
+    fit1$y <- rbind(fit1$y, y1.select)
+  }else{
+    fit1$y <- rbind(fit1$y, y1.select-attr(fit1$y,"scaled:center"))
+    attr(fit1$y, "scaled:center") <- y.center1
+    # attr(fit1$y, "scaled:scale") <- y.scale1
+  }
   
   fit1$tau2hat <- drop(t(fit1$y) %*% fit1$Ki %*% fit1$y / length(fit1$y))
   
@@ -201,9 +221,13 @@ IMSPE3select <- function(x, newx, fit1, fit2, fit3, mc.sample=10000){
   attr(fit2$X, "scaled:center") <- x.center2
   attr(fit2$X, "scaled:scale") <- x.scale2
   
-  fit2$y <- rbind(fit2$y, y2.select)
-  attr(fit2$y, "scaled:center") <- y.center2
-  # attr(fit2$y, "scaled:scale") <- y.scale2
+  if(constant){
+    fit2$y <- rbind(fit2$y, y2.select)
+  }else{
+    fit2$y <- rbind(fit2$y, y2.select-attr(fit2$y,"scaled:center"))
+    attr(fit2$y, "scaled:center") <- y.center2
+    # attr(fit2$y, "scaled:scale") <- y.scale2
+  }
   
   fit2$tau2hat <- drop(t(fit2$y) %*% fit2$Ki %*% fit2$y / length(fit2$y))  
   
@@ -220,12 +244,20 @@ IMSPE3select <- function(x, newx, fit1, fit2, fit3, mc.sample=10000){
   attr(fit3$X, "scaled:center") <- x.center3
   attr(fit3$X, "scaled:scale") <- x.scale3
   
-  fit3$y <- rbind(fit3$y, y3.select)
-  attr(fit3$y, "scaled:center") <- y.center3
-  # attr(fit3$y, "scaled:scale") <- y.scale3
+  if(constant){
+    fit3$y <- rbind(fit3$y, y3.select)
+  }else{
+    fit3$y <- rbind(fit3$y, y3.select-attr(fit3$y,"scaled:center"))
+    attr(fit3$y, "scaled:center") <- y.center3
+    # attr(fit3$y, "scaled:scale") <- y.scale3
+  }
   
   fit3$tau2hat <- drop(t(fit3$y) %*% fit3$Ki %*% fit3$y / length(fit3$y))
   
-  return(list(IMSPE=mean(closed2(x, fit1, fit2, fit3)$sig2), fit1new=fit1, fit2new=fit2, fit3new=fit3))
+  if(constant){
+    return(list(IMSPE=mean(closed2(x, fit1, fit2, fit3, constant=TRUE)$sig2), fit1new=fit1, fit2new=fit2, fit3new=fit3))
+  }else{
+    return(list(IMSPE=mean(closed2(x, fit1, fit2, fit3)$sig2), fit1new=fit1, fit2new=fit2, fit3new=fit3))
+  }
 }
 

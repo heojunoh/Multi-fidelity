@@ -3,17 +3,18 @@ library(laGP)
 source("GP.R")
 source("KOH.R")
 source("closed.R")
+source("score.R")
 
 ### synthetic function ###
 fl <- function(x, l){
   term1 <- sin(2*pi*x)
   term2 <- 0.2 * sin(8*pi*x)
 
-  term1 + term2*0.8^l*5 + (term1+term2)^3 + exp(-2*term1*term2) #* (term1+term2)^3 # term1 + error term + interaction term
+  (term1 + term2*5 + (term1+term2)^3)*(1+0.8^l) 
 }
 
 ### training data ###
-n1 <- 15; n2 <- 13; n3 <- 11
+n1 <- 11; n2 <- 9; n3 <- 7
 set.seed(1)
 X3 <- maximinLHS(n3, 1) # x^H
 y3 <- fl(X3, l=5)
@@ -48,59 +49,10 @@ predsig2 <- closed2(x, fit.GP1, fit.GP2new, fit.GP3new)$sig2
 
 
 ### KOH method ###
-y2d3 <- fl(X3, l=3)
-y1d2 <- fl(X2, l=1)
-
-### estimating first order ###
-fit.KOHGP1 <- KOHGP(X1, y1)
-b1 <- 1/fit.KOHGP1$theta
-sig2_1 <- fit.KOHGP1$tau2hat
-
-### estimating second order ###
-# KOH(X2, y2, y1d2)
-rho1 <- KOH(X2, y2, y1d2)$rho
-b2 <- 1/KOH(X2, y2, y1d2)$theta
-sig2_2 <- KOH(X2, y2, y1d2)$tau2hat
-
-### prediction of 2nd order KOH ###
-tx1 <- cbind(rho1*sig2_1*covar.sep(x, X1, d=1/b1, g=eps), 
-             rho1^2*sig2_1*covar.sep(x, X2, d=1/b1, g=eps) + sig2_2*covar.sep(x, X2, d=1/b2, g=eps))
-
-V1 <- sig2_1*covar.sep(X1, d=1/b1, g=eps)
-V12 <- rho1*sig2_1*covar.sep(X1, X2, d=1/b1, g=0)
-V2 <- rho1^2*sig2_1*covar.sep(X2, d=1/b1, g=eps) + sig2_2*covar.sep(X2, d=1/b2, g=eps)
-
-V_2 <- rbind(cbind(V1, V12), cbind(t(V12), V2))
-
-mx1 <- tx1 %*% solve(V_2) %*% c(y1, y2)
-
-### posterior variance ###
-koh.var1 <- pmax(0, diag(sig2_2*covar.sep(matrix(x), d=1/b2, g=eps) + sig2_1*rho1^2*covar.sep(matrix(x), d=1/b1, g=eps) - tx1 %*% solve(V_2+diag(eps, nrow(V_2)))%*%t(tx1)))
-
-### estimating third order ###
-# KOH(X3, y3, y2d3)
-rho2 <- KOH(X3, y3, y2d3)$rho
-b3 <- 1/KOH(X3, y3, y2d3)$theta
-sig2_3 <- KOH(X3, y3, y2d3)$tau2hat
-
-### prediction of 2nd order KOH ###
-tx2 <- cbind(rho1*rho2*sig2_1*covar.sep(x, X1, d=1/b1, g=eps), 
-             rho1^2*rho2*sig2_1*covar.sep(x, X2, d=1/b1, g=eps) + rho2*sig2_2*covar.sep(x, X2, d=1/b2, g=eps),
-             rho1^2*rho2^2*sig2_1*covar.sep(x, X3, d=1/b1, g=eps) + rho2^2*sig2_2*covar.sep(x, X3, d=1/b2, g=eps) + sig2_3*covar.sep(x, X3, d=1/b3, g=eps))
-
-V1 <- sig2_1*covar.sep(X1, d=1/b1, g=eps)
-V12 <- rho1*sig2_1*covar.sep(X1, X2, d=1/b1, g=0)
-V13 <- rho1*rho2*sig2_1*covar.sep(X1, X3, d=1/b1, g=0)
-V2 <- rho1^2*sig2_1*covar.sep(X2, d=1/b1, g=eps) + sig2_2*covar.sep(X2, d=1/b2, g=eps)
-V23 <- rho1^2*rho2*sig2_1*covar.sep(X2, X3, d=1/b1, g=0) + rho2*sig2_2*covar.sep(X2, X3, d=1/b2, g=0)
-V3 <- rho1^2*rho2^2*sig2_1*covar.sep(X3, d=1/b1, g=eps) + rho2^2*sig2_2*covar.sep(X3, d=1/b2, g=eps) + sig2_3*covar.sep(X3, d=1/b3, g=eps)
-
-V_3 <- rbind(cbind(V1, V12, V13), cbind(t(V12), V2, V23), cbind(t(V13), t(V23), V3))
-
-mx2 <- tx2 %*% solve(V_3) %*% c(y1, y2, y3)
-
-### posterior variance ###
-koh.var2 <- pmax(0, diag(sig2_3*covar.sep(matrix(x), d=1/b3, g=eps) + sig2_2*rho2^2*covar.sep(matrix(x), d=1/b2, g=eps) + sig2_1*rho1^2*rho2^2*covar.sep(matrix(x), d=1/b3, g=eps) - tx2 %*% solve(V_3+diag(eps, nrow(V_3)))%*%t(tx2)))
+fit.KOH3 <- fit.KOH(X1, X2, X3, y1, y2, y3)
+pred.KOH3 <- pred.KOH(fit.KOH3, x)
+mx2 <- pred.KOH3$mu
+koh.var2 <- pred.KOH3$sig2
 
 
 ### direct fitting; not using closed form. f1(u) and f_M(u) from (u, f_M(u, f1(u))) are random variables.
@@ -180,5 +132,5 @@ median(crps(fl(x, l=5), mx2, koh.var2)) # KOH
 
 sum(predsig2)
 sum(pred3new$sig2)
-sum(koh.var1)
+sum(koh.var2)
 

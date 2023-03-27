@@ -203,3 +203,94 @@ apply(result.borehole.medcrps, 2, mean)
 table(apply(result.borehole.medcrps, 1, which.min))
 boxplot(result.borehole.medcrps)
 
+
+# closedrmse <- matrix(c(0,0,0), nrow=1)
+# closedmeanscore <- matrix(c(0,0,0), nrow=1)
+# closedmedscore <- matrix(c(0,0,0), nrow=1)
+# closedmeancrps <- matrix(c(0,0,0), nrow=1)
+# closedmedcrps <- matrix(c(0,0,0), nrow=1)
+# kohrmse <- matrix(c(0,0,0), nrow=1)
+# kohmeanscore <- matrix(c(0,0,0), nrow=1)
+# kohmedscore <- matrix(c(0,0,0), nrow=1)
+# kohmeancrps <- matrix(c(0,0,0), nrow=1)
+# kohmedcrps <- matrix(c(0,0,0), nrow=1)
+
+
+closedrmse <- rbind(closedrmse, c(sort(result.borehole.rmse[,2])[5], apply(result.borehole.rmse, 2, mean)[2], sort(result.borehole.rmse[,2])[96]))
+closedmeanscore <- rbind(closedmeanscore, c(sort(result.borehole.meanscore[,2])[5], apply(result.borehole.meanscore, 2, mean)[2], sort(result.borehole.meanscore[,2])[96]))
+closedmedscore <- rbind(closedmedscore, c(sort(result.borehole.medscore[,2])[5], apply(result.borehole.medscore, 2, mean)[2], sort(result.borehole.medscore[,2])[96]))
+closedmeancrps <- rbind(closedmeancrps, c(sort(result.borehole.meancrps[,2])[5], apply(result.borehole.meancrps, 2, mean)[2], sort(result.borehole.meancrps[,2])[96]))
+closedmedcrps <- rbind(closedmedcrps, c(sort(result.borehole.medcrps[,2])[5], apply(result.borehole.medcrps, 2, mean)[2], sort(result.borehole.medcrps[,2])[96]))
+
+kohrmse <- rbind(kohrmse, c(sort(result.borehole.rmse[,4])[5], apply(result.borehole.rmse, 2, mean)[4], sort(result.borehole.rmse[,4])[96]))
+kohmeanscore <- rbind(kohmeanscore, c(sort(result.borehole.meanscore[,4])[5], apply(result.borehole.meanscore, 2, mean)[4], sort(result.borehole.meanscore[,4])[96]))
+kohmedscore <- rbind(kohmedscore, c(sort(result.borehole.medscore[,4])[5], apply(result.borehole.medscore, 2, mean)[4], sort(result.borehole.medscore[,4])[96]))
+kohmeancrps <- rbind(kohmeancrps, c(sort(result.borehole.meancrps[,4])[5], apply(result.borehole.meancrps, 2, mean)[4], sort(result.borehole.meancrps[,4])[96]))
+kohmedcrps <- rbind(kohmedcrps, c(sort(result.borehole.medcrps[,4])[5], apply(result.borehole.medcrps, 2, mean)[4], sort(result.borehole.medcrps[,4])[96]))
+
+
+# closedrmse <- closedrmse[-1,]
+# closedmeanscore <- closedmeanscore[-1,]
+# closedmedscore <- closedmedscore[-1,]
+# closedmeancrps <- closedmeancrps[-1,]
+# closedmedcrps <- closedmedcrps[-1,]
+# 
+# kohrmse <- kohrmse[-1,]
+# kohmeanscore <- kohmeanscore[-1,]
+# kohmedscore <- kohmedscore[-1,]
+# kohmeancrps <- kohmeancrps[-1,]
+# kohmedcrps <- kohmedcrps[-1,]
+
+
+### RMSE ###
+plot(c(30,40,50,60,70), closedrmse[,2], type="l", lwd=2, col=3,  # Green; closed
+     ylim=c(min(c(closedrmse, kohrmse)), max(c(closedrmse, kohrmse)))) 
+lines(c(30,40,50,60,70), closedrmse[,1], col=3, lty=2)
+lines(c(30,40,50,60,70), closedrmse[,3], col=3, lty=2)
+
+lines(c(30,40,50,60,70), kohrmse[,2], lwd=2, col=7) # Yellow; KOH
+lines(c(30,40,50,60,70), kohrmse[,1], col=7, lty=2)
+lines(c(30,40,50,60,70), kohrmse[,3], col=7, lty=2)
+
+### Mean score ###
+plot(c(30,40,50,60,70), closedmeanscore[,2], type="l", lwd=2, col=3,  # Green; closed
+     ylim=c(min(c(closedmeanscore, kohmeanscore)), max(c(closedmeanscore, kohmeanscore)))) 
+lines(c(30,40,50,60,70), closedmeanscore[,1], col=3, lty=2)
+lines(c(30,40,50,60,70), closedmeanscore[,3], col=3, lty=2)
+
+lines(c(30,40,50,60,70), kohmeanscore[,2], lwd=2, col=7) # Yellow; KOH
+lines(c(30,40,50,60,70), kohmeanscore[,1], col=7, lty=2)
+lines(c(30,40,50,60,70), kohmeanscore[,3], col=7, lty=2)
+
+### Median score ###
+plot(c(30,40,50,60,70), closedmedscore[,2], type="l", lwd=2, col=3,  # Green; closed
+     ylim=c(min(c(closedmedscore, kohmedscore)), max(c(closedmedscore, kohmedscore)))) 
+lines(c(30,40,50,60,70), closedmedscore[,1], col=3, lty=2)
+lines(c(30,40,50,60,70), closedmedscore[,3], col=3, lty=2)
+
+lines(c(30,40,50,60,70), kohmedscore[,2], lwd=2, col=7) # Yellow; KOH
+lines(c(30,40,50,60,70), kohmedscore[,1], col=7, lty=2)
+lines(c(30,40,50,60,70), kohmedscore[,3], col=7, lty=2)
+
+### Mean CRPS ###
+plot(c(30,40,50,60,70), closedmeancrps[,2], type="l", lwd=2, col=3,  # Green; closed
+     ylim=c(min(c(closedmeancrps, kohmeancrps)), max(c(closedmeancrps, kohmeancrps)))) 
+lines(c(30,40,50,60,70), closedmeancrps[,1], col=3, lty=2)
+lines(c(30,40,50,60,70), closedmeancrps[,3], col=3, lty=2)
+
+lines(c(30,40,50,60,70), kohmeancrps[,2], lwd=2, col=7) # Yellow; KOH
+lines(c(30,40,50,60,70), kohmeancrps[,1], col=7, lty=2)
+lines(c(30,40,50,60,70), kohmeancrps[,3], col=7, lty=2)
+
+### Median CRPS ###
+plot(c(30,40,50,60,70), closedmedcrps[,2], type="l", lwd=2, col=3,  # Green; closed
+     ylim=c(min(c(closedmedcrps, kohmedcrps)), max(c(closedmedcrps, kohmedcrps)))) 
+lines(c(30,40,50,60,70), closedmedcrps[,1], col=3, lty=2)
+lines(c(30,40,50,60,70), closedmedcrps[,3], col=3, lty=2)
+
+lines(c(30,40,50,60,70), kohmedcrps[,2], lwd=2, col=7) # Yellow; KOH
+lines(c(30,40,50,60,70), kohmedcrps[,1], col=7, lty=2)
+lines(c(30,40,50,60,70), kohmedcrps[,3], col=7, lty=2)
+
+
+
