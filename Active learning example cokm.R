@@ -14,7 +14,7 @@ fl <- function(x, l){
 
 ### training data ###
 n1 <- 9; n2 <- 7; n3 <- 5
-set.seed(8)
+set.seed(1)
 X1 <- maximinLHS(n1, 1)
 X2 <- maximinLHS(n2, 1)
 X3 <- maximinLHS(n3, 1)
@@ -52,10 +52,9 @@ x <- seq(0,1,0.01)
 ### cokm ###
 fit.muficokm <- MuFicokm(formula = list(~1,~1,~1), MuFidesign = NestDesign, covtype="gauss",
                          # coef.trend = list(0,c(0,0),c(0,0)),
-                         lower=0.001, upper=0.1,
+                         lower=eps, upper=0.1,
                          response = list(y1,y2,y3), nlevel = 3)
 pred.muficokm <- predict(fit.muficokm, x, "SK", cov.compute=TRUE)
-
 
 ### compared to single fidelity ###
 fit.GP3 <- GP(X3, y3)
@@ -79,9 +78,9 @@ xxnew <- cbind(x, w2.x)
 pred3new <- pred.GP(fit.GP3new, xxnew) # not closed form
 
 ### RMSE ###
-sqrt(mean((pred.muficokm$mean-fl(x, l=Inf))^2)) # cokm
-sqrt(mean((pred3new$mu-fl(x, l=Inf))^2)) # not closed form
-sqrt(mean((pred3$mu-fl(x, l=Inf))^2)) # single fidelity
+sqrt(mean((pred.muficokm$mean-fl(x, l=5))^2)) # cokm
+sqrt(mean((pred3new$mu-fl(x, l=5))^2)) # not closed form
+sqrt(mean((pred3$mu-fl(x, l=5))^2)) # single fidelity
 
 
 #############
@@ -116,13 +115,11 @@ which.min(Icand3cokm)
 alccokm <- c(Icand1cokm[which.min(Icand1cokm)], Icand2cokm[which.min(Icand2cokm)], Icand3cokm[which.min(Icand3cokm)] )
 alccokm
 
-### cost; 1, 2, 3 ###
-which.min(alccokm*c(2,(2+8),(2+8+32)))
-alccokm*c(2,(2+8),(2+8+32))
-
+which.min(alccokm*c(2,(2+4),(2+4+8)))
+alccokm*c(2,(2+4),(2+4+8))
 
 chosen <- matrix(0, ncol=2)
-chosen[1,1] <- which.min(alccokm*c(2,(2+8),(2+8+32)))
+chosen[1,1] <- which.min(alccokm*c(2,(2+4),(2+4+8)))
 chosen[1,2] <- which.min(cbind(Icand1cokm, Icand2cokm, Icand3cokm)[,chosen[1,1]])
 
 
@@ -155,7 +152,7 @@ predy <- predict(Iselect$fit, x, "SK")$mean
 predsig2 <- predict(Iselect$fit, x, "SK")$sig2
 
 ### RMSE ###  0.07955958 -> 0.07413344 -> 0.07678651 -> 
-sqrt(mean((predy-fl(x, l=Inf))^2)) # closed form
+sqrt(mean((predy-fl(x, l=5))^2)) # closed form
 
 #############
 ### IMSPE ###
@@ -188,17 +185,14 @@ which.min(Icand1cokm)
 which.min(Icand2cokm)
 which.min(Icand3cokm)
 
-### Fast update; Equation 6.6. in Surrogates ###
-### ALC; How much can be improved. Equation 6.6. in Surrogates ###
+### ALC; How much can be reduced ###
 alccokm <- c(Icand1cokm[which.min(Icand1cokm)], Icand2cokm[which.min(Icand2cokm)], Icand3cokm[which.min(Icand3cokm)] )
 alccokm
 
-### cost; 1, 2, 3 ###
-which.min(alccokm*c(2,(2+8),(2+8+32)))
-alccokm*c(2,(2+8),(2+8+32))
+which.min(alccokm*c(2,(2+4),(2+4+8)))
+alccokm*c(2,(2+4),(2+4+8))
 
-
-chosen <- rbind(chosen, c(which.min(alccokm*c(2,(2+8),(2+8+32))), which.min(cbind(Icand1cokm, Icand2cokm, Icand3cokm)[,which.min(alccokm*c(2,(2+8),(2+8+32)))])))
+chosen <- rbind(chosen, c(which.min(alccokm*c(2,(2+4),(2+4+8))), which.min(cbind(Icand1cokm, Icand2cokm, Icand3cokm)[,which.min(alccokm*c(2,(2+4),(2+4+8)))])))
 
 
 ### Plotting the chosen point ###
@@ -210,9 +204,9 @@ lines(x, predy-1.96*sqrt(predsig2*length(y3)/(length(y3)-2)), col=3, lty=2)
 
 curve(fl(x,l=5),add=TRUE, col=1,lwd=2,lty=2) # high fidelity(TRUE); Black
 
-points(X1, y1, pch="1", col="red")
-points(X2, y2, pch="2", col="red")
-points(X3, y3, pch="3", col="red")
+points(Iselect$fit$cok[[1]]@X, Iselect$fit$cok[[1]]@y, pch="1", col="red")
+points(Iselect$fit$cok[[2]]@X, Iselect$fit$cok[[2]]@y, pch="2", col="red")
+points(Iselect$fit$cok[[3]]@X, Iselect$fit$cok[[3]]@y, pch="3", col="red")
 
 text(g[which.min(Icand1cokm)], predy[which.min(Icand1cokm)], expression("1*"), col="red")
 text(g[which.min(Icand2cokm)], predy[which.min(Icand2cokm)], expression("2*"), col="red")
@@ -230,7 +224,7 @@ predy <- predict(Iselect$fit, x, "SK")$mean
 predsig2 <- predict(Iselect$fit, x, "SK")$sig2
 
 ### RMSE ###  0.07955958 -> 0.07413344 -> 0.07420309 -> 0.07138561 -> 0.07247886
-sqrt(mean((predy-fl(x, l=Inf))^2)) # closed form
+sqrt(mean((predy-fl(x, l=5))^2)) # closed form
 
 #############
 ### IMSPE ###
@@ -264,17 +258,14 @@ which.min(Icand1cokm)
 which.min(Icand2cokm)
 which.min(Icand3cokm)
 
-### cokm update; Equation 6.6. in Surrogates ###
-### ALC; How much can be improved. Equation 6.6. in Surrogates ###
+### ALC; How much can be reduced ###
 alccokm <- c(Icand1cokm[which.min(Icand1cokm)], Icand2cokm[which.min(Icand2cokm)], Icand3cokm[which.min(Icand3cokm)] )
 alccokm
 
-### cost; 1, 2, 3 ###
-which.min(alccokm*c(2,(2+8),(2+8+32)))
-alccokm*c(2,(2+8),(2+8+32))
+which.min(alccokm*c(2,(2+4),(2+4+8)))
+alccokm*c(2,(2+4),(2+4+8))
 
-
-chosen <- rbind(chosen, c(which.min(alccokm*c(2,(2+8),(2+8+32))), which.min(cbind(Icand1cokm, Icand2cokm, Icand3cokm)[,which.min(alccokm*c(2,(2+8),(2+8+32)))])))
+chosen <- rbind(chosen, c(which.min(alccokm*c(2,(2+4),(2+4+8))), which.min(cbind(Icand1cokm, Icand2cokm, Icand3cokm)[,which.min(alccokm*c(2,(2+4),(2+4+8)))])))
 
 
 ### Plotting the chosen point ###
@@ -286,9 +277,9 @@ lines(x, predy-1.96*sqrt(predsig2*length(y3)/(length(y3)-2)), col=3, lty=2)
 
 curve(fl(x,l=5),add=TRUE, col=1,lwd=2,lty=2) # high fidelity(TRUE); Black
 
-points(X1, y1, pch="1", col="red")
-points(X2, y2, pch="2", col="red")
-points(X3, y3, pch="3", col="red")
+points(Iselect$fit$cok[[1]]@X, Iselect$fit$cok[[1]]@y, pch="1", col="red")
+points(Iselect$fit$cok[[2]]@X, Iselect$fit$cok[[2]]@y, pch="2", col="red")
+points(Iselect$fit$cok[[3]]@X, Iselect$fit$cok[[3]]@y, pch="3", col="red")
 
 text(g[which.min(Icand1cokm)], predy[which.min(Icand1cokm)], expression("1*"), col="red")
 text(g[which.min(Icand2cokm)], predy[which.min(Icand2cokm)], expression("2*"), col="red")
@@ -307,7 +298,7 @@ predy <- predict(Iselect$fit, x, "SK")$mean
 predsig2 <- predict(Iselect$fit, x, "SK")$sig2
 
 ### RMSE ###  0.07955958 -> 0.07413344 -> 0.07420309 -> 0.07138561 -> 0.07247886
-sqrt(mean((predy-fl(x, l=Inf))^2)) # closed form
+sqrt(mean((predy-fl(x, l=5))^2)) # closed form
 
 #############
 ### IMSPE ###
@@ -341,17 +332,14 @@ which.min(Icand1cokm)
 which.min(Icand2cokm)
 which.min(Icand3cokm)
 
-### cokm update; Equation 6.6. in Surrogates ###
-### ALC; How much can be improved. Equation 6.6. in Surrogates ###
+### ALC; How much can be reduced ###
 alccokm <- c(Icand1cokm[which.min(Icand1cokm)], Icand2cokm[which.min(Icand2cokm)], Icand3cokm[which.min(Icand3cokm)] )
 alccokm
 
-### cost; 1, 2, 3 ###
-which.min(alccokm*c(2,(2+8),(2+8+32)))
-alccokm*c(2,(2+8),(2+8+32))
+which.min(alccokm*c(2,(2+4),(2+4+8)))
+alccokm*c(2,(2+4),(2+4+8))
 
-
-chosen <- rbind(chosen, c(which.min(alccokm*c(2,(2+8),(2+8+32))), which.min(cbind(Icand1cokm, Icand2cokm, Icand3cokm)[,which.min(alccokm*c(2,(2+8),(2+8+32)))])))
+chosen <- rbind(chosen, c(which.min(alccokm*c(2,(2+4),(2+4+8))), which.min(cbind(Icand1cokm, Icand2cokm, Icand3cokm)[,which.min(alccokm*c(2,(2+4),(2+4+8)))])))
 
 
 ### Plotting the chosen point ###
@@ -363,9 +351,9 @@ lines(x, predy-1.96*sqrt(predsig2*length(y3)/(length(y3)-2)), col=3, lty=2)
 
 curve(fl(x,l=5),add=TRUE, col=1,lwd=2,lty=2) # high fidelity(TRUE); Black
 
-points(X1, y1, pch="1", col="red")
-points(X2, y2, pch="2", col="red")
-points(X3, y3, pch="3", col="red")
+points(Iselect$fit$cok[[1]]@X, Iselect$fit$cok[[1]]@y, pch="1", col="red")
+points(Iselect$fit$cok[[2]]@X, Iselect$fit$cok[[2]]@y, pch="2", col="red")
+points(Iselect$fit$cok[[3]]@X, Iselect$fit$cok[[3]]@y, pch="3", col="red")
 
 text(g[which.min(Icand1cokm)], predy[which.min(Icand1cokm)], expression("1*"), col="red")
 text(g[which.min(Icand2cokm)], predy[which.min(Icand2cokm)], expression("2*"), col="red")
@@ -385,7 +373,7 @@ predy <- predict(Iselect$fit, x, "SK")$mean
 predsig2 <- predict(Iselect$fit, x, "SK")$sig2
 
 ### RMSE ###  0.07955958 -> 0.07413344 -> 0.07420309 -> 0.07138561 -> 0.07247886
-sqrt(mean((predy-fl(x, l=Inf))^2)) # closed form
+sqrt(mean((predy-fl(x, l=5))^2)) # closed form
 
 #############
 ### IMSPE ###
@@ -419,17 +407,14 @@ which.min(Icand1cokm)
 which.min(Icand2cokm)
 which.min(Icand3cokm)
 
-### cokm update; Equation 6.6. in Surrogates ###
-### ALC; How much can be improved. Equation 6.6. in Surrogates ###
+### ALC; How much can be reduced ###
 alccokm <- c(Icand1cokm[which.min(Icand1cokm)], Icand2cokm[which.min(Icand2cokm)], Icand3cokm[which.min(Icand3cokm)] )
 alccokm
 
-### cost; 1, 2, 3 ###
-which.min(alccokm*c(2,(2+8),(2+8+32)))
-alccokm*c(2,(2+8),(2+8+32))
+which.min(alccokm*c(2,(2+4),(2+4+8)))
+alccokm*c(2,(2+4),(2+4+8))
 
-
-chosen <- rbind(chosen, c(which.min(alccokm*c(2,(2+8),(2+8+32))), which.min(cbind(Icand1cokm, Icand2cokm, Icand3cokm)[,which.min(alccokm*c(2,(2+8),(2+8+32)))])))
+chosen <- rbind(chosen, c(which.min(alccokm*c(2,(2+4),(2+4+8))), which.min(cbind(Icand1cokm, Icand2cokm, Icand3cokm)[,which.min(alccokm*c(2,(2+4),(2+4+8)))])))
 
 
 ### Plotting the chosen point ###
@@ -441,9 +426,9 @@ lines(x, predy-1.96*sqrt(predsig2*length(y3)/(length(y3)-2)), col=3, lty=2)
 
 curve(fl(x,l=5),add=TRUE, col=1,lwd=2,lty=2) # high fidelity(TRUE); Black
 
-points(X1, y1, pch="1", col="red")
-points(X2, y2, pch="2", col="red")
-points(X3, y3, pch="3", col="red")
+points(Iselect$fit$cok[[1]]@X, Iselect$fit$cok[[1]]@y, pch="1", col="red")
+points(Iselect$fit$cok[[2]]@X, Iselect$fit$cok[[2]]@y, pch="2", col="red")
+points(Iselect$fit$cok[[3]]@X, Iselect$fit$cok[[3]]@y, pch="3", col="red")
 
 text(g[which.min(Icand1cokm)], predy[which.min(Icand1cokm)], expression("1*"), col="red")
 text(g[which.min(Icand2cokm)], predy[which.min(Icand2cokm)], expression("2*"), col="red")

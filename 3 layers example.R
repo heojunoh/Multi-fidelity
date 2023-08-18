@@ -10,33 +10,41 @@ fl <- function(x, l){
   term1 <- sin(2*pi*x)
   term2 <- 0.2 * sin(8*pi*x)
 
-  (term1 + term2*5 + (term1+term2)^3)*(1+0.8^l) 
+  # (term1 + term2*5 + (term1+term2)^3)*(1+0.8^l) 
+  1*(term1 + term2*5*0.8^l + (term1+term2)^3 + exp(-2*term1*term2))
 }
 
 ### training data ###
 n1 <- 11; n2 <- 9; n3 <- 7
 set.seed(1)
-X3 <- maximinLHS(n3, 1) # x^H
-y3 <- fl(X3, l=5)
-X2 <- matrix(c(X3, maximinLHS(n2-n3, 1))) # x^M
-y2 <- fl(X2, l=3)
-X1 <- matrix(c(X2, maximinLHS(n1-n2, 1))) # x^L
+X1 <- maximinLHS(n1, 1)
+X2 <- maximinLHS(n2, 1)
+X3 <- maximinLHS(n3, 1)
+
+NestDesign <- NestedDesignBuild(design = list(X1,X2,X3))
+
+X1 <- NestDesign$PX
+X2 <- ExtractNestDesign(NestDesign,2)
+X3 <- ExtractNestDesign(NestDesign,3)
+
 y1 <- fl(X1, l=1)
+y2 <- fl(X2, l=3)
+y3 <- fl(X3, l=5)
 
 ### model fitting for f1 ###
 eps <- sqrt(.Machine$double.eps)
-fit.GP1 <- GP(X1, y1)
+fit.GP1 <- GP(X1, y1, constant=TRUE)
 
 ### model fitting using (x2, f1(x2)) ###
 w1.x2 <- pred.GP(fit.GP1, X2)$mu # can interpolate; nested
 X2new <- cbind(X2, w1.x2) # combine (X2, f1(x2))
-fit.GP2new <- GP(X2new, y2) # model fitting for f_M(X2, f1(x2))
+fit.GP2new <- GP(X2new, y2, constant=TRUE) # model fitting for f_M(X2, f1(x2))
 
 ### model fitting using (x3, f2(x3, f1(x3))) ###
 w1.x3 <- pred.GP(fit.GP1, X3)$mu # can interpolate; nested
 w2.x3 <- pred.GP(fit.GP2new, cbind(X3, w1.x3))$mu # can interpolate; nested
 X3new <- cbind(X3, w2.x3) # combine (X3, f2(x3, f1(x3)))
-fit.GP3new <- GP(X3new, y3) # model fitting for f_H(X3, f2(x3, f1(x3)))
+fit.GP3new <- GP(X3new, y3, constant=TRUE) # model fitting for f_H(X3, f2(x3, f1(x3)))
 
 
 ### test data ###
@@ -44,8 +52,9 @@ x <- seq(0,1,0.01)
 
 
 ### closed ###
-predy <- closed2(x, fit.GP1, fit.GP2new, fit.GP3new)$mu
-predsig2 <- closed2(x, fit.GP1, fit.GP2new, fit.GP3new)$sig2
+fit.closed <- closed2(X1, y1, X2, y2, X3, y3, constant=TRUE)
+predy <- predclosed2(fit.closed, x)$mu
+predsig2 <- predclosed2(fit.closed, x)$sig2
 
 
 ### KOH method ###
@@ -73,7 +82,7 @@ xxnew <- cbind(x, w2.x)
 pred3new <- pred.GP(fit.GP3new, xxnew) # not closed form
 
 ### prediction of original GP with single fidelity ###
-fit.GP3 <- GP(X3, y3)
+fit.GP3 <- GP(X3, y3, constant=TRUE)
 pred3 <- pred.GP(fit.GP3, x)
 
 ### plot ###
@@ -82,9 +91,9 @@ plot(x, predy, type="l", lwd=2, col=3,
                   pred3new$mu+1.96*sqrt(pred3new$sig2*length(y3)/(length(y3)-2)), pred3new$mu-1.96*sqrt(pred3new$sig2*length(y3)/(length(y3)-2)),
                   mx2+1.96*sqrt(koh.var2*length(y3)/(length(y3)-2)), mx2-1.96*sqrt(koh.var2*length(y3)/(length(y3)-2))
      ))) # Green; Closed form
-plot(x, predy, type="l", lwd=2, col=3, 
-     ylim=range(c(predy+1.96*sqrt(predsig2*length(y3)/(length(y3)-2)), predy-1.96*sqrt(predsig2*length(y3)/(length(y3)-2))
-     ))) 
+# plot(x, predy, type="l", lwd=2, col=3, 
+#      ylim=range(c(predy+1.96*sqrt(predsig2*length(y3)/(length(y3)-2)), predy-1.96*sqrt(predsig2*length(y3)/(length(y3)-2))
+#      ))) 
 lines(x, predy+1.96*sqrt(predsig2*length(y3)/(length(y3)-2)), col=3, lty=2)
 lines(x, predy-1.96*sqrt(predsig2*length(y3)/(length(y3)-2)), col=3, lty=2)
 
@@ -102,12 +111,18 @@ lines(x, mx2+1.96*sqrt(koh.var2*length(y3)/(length(y3)-2)), col=7, lty=2)
 lines(x, mx2-1.96*sqrt(koh.var2*length(y3)/(length(y3)-2)), col=7, lty=2)
 
 curve(fl(x,l=5),add=TRUE, col=1,lwd=2,lty=2) # high fidelity(TRUE); Black
+points(X1, y1, pch="1", col="red")
+points(X2, y2, pch="2", col="red")
+points(X3, y3, pch="3", col="red")
 
 ### RMSE ###
 sqrt(mean((pred3$mu-fl(x, l=5))^2)) # single fidelity
 sqrt(mean((predy-fl(x, l=5))^2)) # closed form
 sqrt(mean((pred3new$mu-fl(x, l=5))^2)) # not closed form
 sqrt(mean((mx2-fl(x, l=5))^2)) # KOH
+sum(predsig2)
+sum(pred3new$sig2)
+sum(koh.var2)
 
 mean(score(fl(x, l=5), pred3$mu, pred3$sig2)) # single fidelity
 mean(score(fl(x, l=5), predy, predsig2)) # closed form

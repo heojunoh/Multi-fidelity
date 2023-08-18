@@ -38,7 +38,7 @@ boreholelow <- function(xx)
   L  <- xx[7]
   Kw <- xx[8]
   
-  frac1 <- 5 * Tu * (Hu-Hl) + (Tu * Kw) # Tu * Kw is added
+  frac1 <- 5 * Tu * (Hu-Hl) #+ (Tu * Kw) # Tu * Kw is added
   
   frac2a <- 2*L*Tu / (log(r/rw)*rw^2*Kw)
   frac2b <- Tu / Tl
