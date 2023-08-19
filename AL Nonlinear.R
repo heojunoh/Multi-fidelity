@@ -1,5 +1,7 @@
 library(lhs)
 library(laGP)
+library(plgp)
+library(MuFiCokriging)
 
 costmatc <- list(NA)
 rmsematc <- list(NA)
@@ -15,7 +17,7 @@ f2 <- function(x)
 }
 
 ### training data ###
-n1 <- 12; n2 <- 9
+n1 <- 13; n2 <- 8
 
 for(kk in 1:10){
   set.seed(kk)
@@ -35,9 +37,9 @@ for(kk in 1:10){
 
 
   ### closed ###
-  fit.closed <- closed(X1, y1, X2, y2, kernel="sqex", constant=TRUE)
-  predy <- predclosed(fit.closed, x)$mu
-  predsig2 <- predclosed(fit.closed, x)$sig2
+  fit.closed <- RNAmf(X1, y1, X2, y2, kernel="sqex", constant=TRUE)
+  predy <- predRNAmf(fit.closed, x)$mu
+  predsig2 <- predRNAmf(fit.closed, x)$sig2
 
   ### RMSE ###
   sqrt(mean((predy-f2(x))^2)) # closed form
@@ -65,12 +67,12 @@ for(kk in 1:10){
   alcfast
 
   ### cost; 1, 2, 3 ###
-  which.max(alcfast/c(2,(2+8)))
-  alcfast/c(2,(2+8))
+  which.max(alcfast/c(1,(1+3)))
+  alcfast/c(1,(1+3))
 
 
   chosen <- matrix(0, ncol=2)
-  chosen[1,1] <- which.max(alcfast/c(2,(2+8)))
+  chosen[1,1] <- which.max(alcfast/c(1,(1+3)))
   chosen[1,2] <- which.min(cbind(Icand1fast, Icand2fast)[,chosen[1,1]])
 
 
@@ -106,9 +108,9 @@ for(kk in 1:10){
     ### RMSE ###
     nonlinear.error <- c(nonlinear.error, sqrt(mean((predy-f2(x))^2))) # closed form
     if(chosen[nrow(chosen),1] == 1){
-      nonlinear.cost[length(nonlinear.cost)+1] <- nonlinear.cost[length(nonlinear.cost)]+2
+      nonlinear.cost[length(nonlinear.cost)+1] <- nonlinear.cost[length(nonlinear.cost)]+1
     }else{
-      nonlinear.cost[length(nonlinear.cost)+1] <- nonlinear.cost[length(nonlinear.cost)]+(2+8)
+      nonlinear.cost[length(nonlinear.cost)+1] <- nonlinear.cost[length(nonlinear.cost)]+(1+3)
     }
 
     #############
@@ -131,11 +133,11 @@ for(kk in 1:10){
     alcfast
 
     ### cost; 1, 2, 3 ###
-    which.max(alcfast/c(2,(2+8)))
-    alcfast/c(2,(2+8))
+    which.max(alcfast/c(1,(1+3)))
+    alcfast/c(1,(1+3))
 
 
-    chosen <- rbind(chosen, c(which.max(alcfast/c(2,(2+8))), which.min(cbind(Icand1fast, Icand2fast)[,which.max(alcfast/c(2,(2+8)))])))
+    chosen <- rbind(chosen, c(which.max(alcfast/c(1,(1+3))), which.min(cbind(Icand1fast, Icand2fast)[,which.max(alcfast/c(1,(1+3)))])))
     Iselect <- IMSPEselect1(x[chosen[nrow(chosen),2]], Iselect$fit, level=chosen[nrow(chosen),1])
 
     if(nonlinear.cost[length(nonlinear.cost)] >= 100){break}

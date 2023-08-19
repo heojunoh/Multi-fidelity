@@ -145,7 +145,7 @@ for(i in 1:rep) {
 
 par(mfrow=c(1,1))
 #RMSE comparison#
-apply(result.nonlinear.rmse, 2, mean)
+apply(result.nonlinear.rmse, 2, mean) # 0.2825692, 0.4260575
 table(apply(result.nonlinear.rmse, 1, which.min))
 boxplot(result.nonlinear.rmse)
 

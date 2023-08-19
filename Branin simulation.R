@@ -193,7 +193,7 @@ for(i in 1:rep) {
 
 par(mfrow=c(1,1))
 #RMSE comparison#
-apply(result.branin.rmse, 2, mean) # 0.10, 0.13, 0.13, 0.05
+apply(result.branin.rmse, 2, mean) # 30.93884, 30.97887
 table(apply(result.branin.rmse, 1, which.min))
 boxplot(result.branin.rmse)
 

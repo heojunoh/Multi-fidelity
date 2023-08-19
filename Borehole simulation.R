@@ -204,7 +204,7 @@ for(i in 1:rep) {
 
 par(mfrow=c(1,1))
 #RMSE comparison#
-apply(result.borehole.rmse, 2, mean)
+apply(result.borehole.rmse, 2, mean) # 1.702758, 2.264872
 table(apply(result.borehole.rmse, 1, which.min))
 boxplot(result.borehole.rmse)
 

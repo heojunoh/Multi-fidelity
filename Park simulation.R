@@ -1,6 +1,7 @@
 ### Park Example ###
 library(lhs)
 library(laGP)
+library(plgp)
 library(MuFiCokriging)
 
 crps <- function(x, mu, sig2){ # The smaller, the better (0 to infinity)
@@ -167,7 +168,7 @@ for(i in 1:rep) {
 
 par(mfrow=c(1,1))
 #RMSE comparison#
-apply(result.park.rmse, 2, mean)
+apply(result.park.rmse, 2, mean) # 0.05398435, 0.05866933
 table(apply(result.park.rmse, 1, which.min))
 boxplot(result.park.rmse)
 apply(result.park.comptime, 2, mean)

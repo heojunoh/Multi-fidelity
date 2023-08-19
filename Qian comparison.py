@@ -168,7 +168,9 @@ mean = np.mean(tmp_m, axis = 0)[:,None]
 var = np.mean(tmp_v, axis = 0)[:,None]+ np.var(tmp_m, axis = 0)[:,None]
 var = np.abs(var)
 end = time.time()
- mean
+
+mean
+var
  
 error = np.linalg.norm(Exact - mean)/np.linalg.norm(Exact)
 # score = np.mean(-(Exact-mean)**2/var-np.log(var))

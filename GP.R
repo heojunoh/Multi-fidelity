@@ -19,6 +19,9 @@ GP <- function(X, y, g=eps,
     
     # darg way
     init <- rep(sort(distance(X))[sort(distance(X))!=0][0.1*length(sort(distance(X))[sort(distance(X))!=0])], ncol(X))
+    lower <- min(sort(distance(X))[sort(distance(X))!=0])
+    upper <- max(sort(distance(X))[sort(distance(X))!=0])
+    
     # GPy way
     # init <- rep(median(distance(X)), ncol(X))
     # init <- rep(1, ncol(X))
