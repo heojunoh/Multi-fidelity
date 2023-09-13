@@ -1,5 +1,11 @@
 library(lhs)
 library(laGP)
+library(plgp)
+library(MuFiCokriging)
+library(doParallel)
+library(foreach)
+library(maximin)
+library(RNAmf)
 
 costmatc3 <- list(NA)
 rmsematc3 <- list(NA)
@@ -40,10 +46,12 @@ park91alc <- function(xx)
 }
 
 ### training data ###
-n1 <- 15; n2 <- 8
+n1 <- 40; n2 <- 20
 d <- 4
+registerDoParallel(8)
 for(kk in 1:10){
   set.seed(kk)
+  print(kk)
   X1 <- maximinLHS(n1, d)
   X2 <- maximinLHS(n2, d)
   
@@ -56,73 +64,45 @@ for(kk in 1:10){
   y2 <- apply(X2,1,park91a)
   
   ### test data ###
-  x <- maximinLHS(100, d)
+  x <- maximinLHS(1000, d)
   
   
-  ### RNAmf ###
-  fit.RNAmf <- RNAmf(X1, y1, X2, y2, kernel="sqex", constant=TRUE)
-  predy <- predRNAmf(fit.RNAmf, x)$mu
-  predsig2 <- predRNAmf(fit.RNAmf, x)$sig2
+  ### closed ###
+  fit.closed <- RNAmf(X1, y1, X2, y2, kernel="sqex", constant=TRUE)
+  predy <- predRNAmf(fit.closed, x)$mu
+  predsig2 <- predRNAmf(fit.closed, x)$sig2
   
   ### RMSE ###
-  sqrt(mean((predy-apply(x,1,park91a))^2)) # RNAmf
-  
-  
-  ### current uncertainty at each level ###
-  unc <- c(max(pred.GP(fit.RNAmf$fit1, x)$sig2), max(predsig2))
-  uncind <- c(which.max(pred.GP(fit.RNAmf$fit1, x)$sig2), which.max(predsig2))
-  
-  ### cost; 1, 2, 3 ###
-  which.max(unc/c(1,(1+10)))
-  unc/c(1,(1+10))
-  
-  
-  chosen <- matrix(0, ncol=2)
-  chosen[1,1] <- which.max(unc/c(1,(1+10)))
-  chosen[1,2] <- uncind[which.max(unc/c(1,(1+10)))]
-  
+  sqrt(mean((predy-apply(x,1,park91a))^2)) # closed form
   
   nonlinear.cost <- 0
   nonlinear.error <- sqrt(mean((predy-apply(x,1,park91a))^2))
   
-  Iselect <- IMSPEselect1(x[chosen[nrow(chosen),2],], fit.RNAmf, level=chosen[nrow(chosen),1])
+  Iselect <- ALMC_two_level(x, fit.closed, 100, c(1,3), list(park91alc, park91a))
   
   
   #################
   ### Add point ###
   #################
   while(nonlinear.cost[length(nonlinear.cost)] < 100){ # if total cost is less than the budget
-    
-    ### RNAmf ###
+    ### closed ###
     predy <- predRNAmf(Iselect$fit, x)$mu
     predsig2 <- predRNAmf(Iselect$fit, x)$sig2
     
     ### RMSE ###
-    nonlinear.error <- c(nonlinear.error, sqrt(mean((predy-apply(x,1,park91a))^2))) # RNAmf form
-    if(chosen[nrow(chosen),1] == 1){
+    nonlinear.error <- c(nonlinear.error, sqrt(mean((predy-apply(x,1,park91a))^2))) # closed form
+    if(Iselect$chosen$level == 1){
       nonlinear.cost[length(nonlinear.cost)+1] <- nonlinear.cost[length(nonlinear.cost)]+1
     }else{
-      nonlinear.cost[length(nonlinear.cost)+1] <- nonlinear.cost[length(nonlinear.cost)]+(1+10)
+      nonlinear.cost[length(nonlinear.cost)+1] <- nonlinear.cost[length(nonlinear.cost)]+(1+3)
     }
-    
-    #############
-    ### IMSPE ###
-    #############
-    
-    ### current uncertainty at each level ###
-    unc <- c(max(pred.GP(Iselect$fit$fit1, x)$sig2), max(predsig2))
-    uncind <- c(which.max(pred.GP(Iselect$fit$fit1, x)$sig2), which.max(predsig2))
-    
-    ### cost; 1, 2, 3 ###
-    which.max(unc/c(1,(1+10)))
-    unc/c(1,(1+10))
-    
-    
-    chosen <- rbind(chosen, c(which.max(unc/c(1,(1+10))), uncind[which.max(unc/c(1,(1+10)))]))
-    Iselect <- IMSPEselect1(x[chosen[nrow(chosen),2],], Iselect$fit, level=chosen[nrow(chosen),1])
+    print(nonlinear.cost[length(nonlinear.cost)])
+    print(nonlinear.error[length(nonlinear.error)])
     
     if(nonlinear.cost[length(nonlinear.cost)] >= 100){break}
     
+    ### update the next point ###
+    Iselect <- ALMC_two_level(x, Iselect$fit, 100, c(1,3), list(park91alc, park91a))
   }
   
   

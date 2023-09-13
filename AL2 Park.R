@@ -1,5 +1,11 @@
 library(lhs)
 library(laGP)
+library(plgp)
+library(MuFiCokriging)
+library(doParallel)
+library(foreach)
+library(maximin)
+library(RNAmf)
 
 costmatc2 <- list(NA)
 rmsematc2 <- list(NA)
@@ -40,10 +46,12 @@ park91alc <- function(xx)
 }
 
 ### training data ###
-n1 <- 15; n2 <- 8
+n1 <- 40; n2 <- 20
 d <- 4
+registerDoParallel(10)
 for(kk in 1:10){
   set.seed(kk)
+  print(kk)
   X1 <- maximinLHS(n1, d)
   X2 <- maximinLHS(n2, d)
 
@@ -56,7 +64,7 @@ for(kk in 1:10){
   y2 <- apply(X2,1,park91a)
 
   ### test data ###
-  x <- maximinLHS(100, d)
+  x <- maximinLHS(1000, d)
 
 
   ### closed ###
@@ -66,85 +74,35 @@ for(kk in 1:10){
 
   ### RMSE ###
   sqrt(mean((predy-apply(x,1,park91a))^2)) # closed form
-
-
-  ### IMSPE ###
-  Icurrent <- mean(predsig2) # current IMSPE
-  Icurrent
-
-  ### Add 1 points and calculate IMSPE ###
-  which.max(predsig2)
-
-  intgvr <- integvar(matrix(x[which.max(predsig2),], nrow=1), fit.closed, mc.sample=10)
-
-  Icand1fast <- intgvr$intvar1
-  Icand2fast <- intgvr$intvar2
-
-  ### Fast update; Equation 6.6. in Surrogates ###
-  ### ALC; How much can be improved. Equation 6.6. in Surrogates ###
-  alcfast <- c(Icurrent - Icand1fast, Icurrent - Icand2fast)
-  alcfast
-
-  ### cost; 1, 2, 3 ###
-  which.max(alcfast/c(1,(1+10)))
-  alcfast/c(1,(1+10))
-
-
-  chosen <- matrix(0, ncol=2)
-  chosen[1,1] <- which.max(alcfast/c(1,(1+10)))
-  chosen[1,2] <- which.max(predsig2)
-
-
+  
   nonlinear.cost <- 0
   nonlinear.error <- sqrt(mean((predy-apply(x,1,park91a))^2))
 
-  Iselect <- IMSPEselect1(x[chosen[nrow(chosen),2],], fit.closed, level=chosen[nrow(chosen),1])
-
-
+  Iselect <- ALC_two_level(x, fit.closed, 100, c(1,6), list(park91alc, park91a))
+  
 
   #################
   ### Add point ###
   #################
   while(nonlinear.cost[length(nonlinear.cost)] < 100){ # if total cost is less than the budget
-
     ### closed ###
     predy <- predRNAmf(Iselect$fit, x)$mu
     predsig2 <- predRNAmf(Iselect$fit, x)$sig2
 
     ### RMSE ###
     nonlinear.error <- c(nonlinear.error, sqrt(mean((predy-apply(x,1,park91a))^2))) # closed form
-    if(chosen[nrow(chosen),1] == 1){
+    if(Iselect$chosen$level == 1){
       nonlinear.cost[length(nonlinear.cost)+1] <- nonlinear.cost[length(nonlinear.cost)]+1
     }else{
-      nonlinear.cost[length(nonlinear.cost)+1] <- nonlinear.cost[length(nonlinear.cost)]+(1+10)
+      nonlinear.cost[length(nonlinear.cost)+1] <- nonlinear.cost[length(nonlinear.cost)]+(1+6)
     }
-
-    #############
-    ### IMSPE ###
-    #############
-    Icurrent <- mean(predsig2)
-
-    ### Add 1 points to the low-fidelity data ###
-    intgvr <- integvar(matrix(x[which.max(predsig2),], nrow=1), Iselect$fit, mc.sample=10)
-
-    Icand1fast <- intgvr$intvar1
-    Icand2fast <- intgvr$intvar2
-
-    ### Fast update; Equation 6.6. in Surrogates ###
-    ### ALC; How much can be improved. Equation 6.6. in Surrogates ###
-    alcfast <- c(Icurrent - Icand1fast, Icurrent - Icand2fast)
-    alcfast
-
-    ### cost; 1, 2, 3 ###
-    which.max(alcfast/c(1,(1+10)))
-    alcfast/c(1,(1+10))
-
-
-    chosen <- rbind(chosen, c(which.max(alcfast/c(1,(1+10))), which.max(predsig2)))
-    Iselect <- IMSPEselect1(x[chosen[nrow(chosen),2],], Iselect$fit, level=chosen[nrow(chosen),1])
-
+    print(nonlinear.cost[length(nonlinear.cost)])
+    print(nonlinear.error[length(nonlinear.error)])
+    
     if(nonlinear.cost[length(nonlinear.cost)] >= 100){break}
-
+    
+    ### update the next point ###
+    Iselect <- ALC_two_level(x, Iselect$fit, 100, c(1,6), list(park91alc, park91a))
   }
 
 
