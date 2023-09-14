@@ -1,7 +1,9 @@
 ### nonlinear Example ###
 library(lhs)
 library(laGP)
+library(plgp)
 library(MuFiCokriging)
+library(RNAmf)
 
 crps <- function(x, mu, sig2){ # The smaller, the better (0 to infinity)
   if(any(sig2==0)) sig2[sig2==0] <- eps
@@ -39,6 +41,7 @@ colnames(result.nonlinear.comptime) <- c("closed", "Cokriging") # The smaller, t
 
 for(i in 1:rep) {
   set.seed(i)
+  print(i)
   
   X1 <- maximinLHS(n1, 1)
   X2 <- maximinLHS(n2, 1)
@@ -67,8 +70,9 @@ for(i in 1:rep) {
   ### closed ###
   tic.closed <- proc.time()[3]
   fit.closed <- RNAmf(X1, y1, X2, y2, kernel="sqex", constant=TRUE)
-  predy <- predRNAmf(fit.closed, x)$mu
-  predsig2 <- predRNAmf(fit.closed, x)$sig2
+  pred.closed <- predRNAmf(fit.closed, x)
+  predy <- pred.closed$mu
+  predsig2 <- pred.closed$sig2
   toc.closed <- proc.time()[3]
   
   # ### KOH method ###
@@ -142,6 +146,12 @@ for(i in 1:rep) {
   result.nonlinear.comptime[i,2] <- toc.cokm - tic.cokm
 }
 
+# install.packages("reticulate")
+# library(reticulate)
+# py_run_file("/Users/junoh/Desktop/Desktop/Documents/Stat/PhD/Research/Multi-fidelity/Multi-fidelity/Perdikaris.py")
+# result.nonlinear.rmse <- cbind(result.nonlinear.rmse, NARGP=unlist(py$l2error))
+# result.nonlinear.meancrps <- cbind(result.nonlinear.meancrps, NARGP=unlist(py$meancrps))
+# result.nonlinear.comptime <- cbind(result.nonlinear.comptime, NARGP=unlist(py$comptime))
 
 par(mfrow=c(1,1))
 #RMSE comparison#

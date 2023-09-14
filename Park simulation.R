@@ -3,6 +3,7 @@ library(lhs)
 library(laGP)
 library(plgp)
 library(MuFiCokriging)
+library(RNAmf)
 
 crps <- function(x, mu, sig2){ # The smaller, the better (0 to infinity)
   if(any(sig2==0)) sig2[sig2==0] <- eps
@@ -63,6 +64,7 @@ meanf <- c(rep(0,100))
 
 for(i in 1:rep) {
   set.seed(i)
+  print(i)
   
   X1 <- maximinLHS(n1, d)
   X2 <- maximinLHS(n2, d)
@@ -92,8 +94,9 @@ for(i in 1:rep) {
   ### closed ###
   tic.closed <- proc.time()[3]
   fit.closed <- RNAmf(X1, y1, X2, y2, kernel="sqex", constant=TRUE)
-  predy <- predRNAmf(fit.closed, x)$mu
-  predsig2 <- predRNAmf(fit.closed, x)$sig2
+  pred.closed <- predRNAmf(fit.closed, x)
+  predy <- pred.closed$mu
+  predsig2 <- pred.closed$sig2
   toc.closed <- proc.time()[3]
   
   # ### compared to single fidelity ###
@@ -166,12 +169,18 @@ for(i in 1:rep) {
   result.park.comptime[i,2] <- toc.cokm - tic.cokm
 }
 
+# install.packages("reticulate")
+# library(reticulate)
+# py_run_file("/Users/junoh/Desktop/Desktop/Documents/Stat/PhD/Research/Multi-fidelity/Multi-fidelity/Park.py")
+# result.park.rmse <- cbind(result.park.rmse, NARGP=unlist(py$l2error))
+# result.park.meancrps <- cbind(result.park.meancrps, NARGP=unlist(py$meancrps))
+# result.park.comptime <- cbind(result.park.comptime, NARGP=unlist(py$comptime))
+
 par(mfrow=c(1,1))
 #RMSE comparison#
 apply(result.park.rmse, 2, mean) # 0.05398435, 0.05866933
 table(apply(result.park.rmse, 1, which.min))
 boxplot(result.park.rmse)
-apply(result.park.comptime, 2, mean)
 
 #mean score#
 apply(result.park.meanscore, 2, mean)

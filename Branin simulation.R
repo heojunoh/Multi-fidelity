@@ -1,7 +1,9 @@
 ### branin Example ###
 library(lhs)
 library(laGP)
+library(plgp)
 library(MuFiCokriging)
+library(RNAmf)
 
 crps <- function(x, mu, sig2){ # The smaller, the better (0 to infinity)
   if(any(sig2==0)) sig2[sig2==0] <- eps
@@ -74,6 +76,7 @@ meanf <- c(rep(0,100))
 
 for(i in 1:rep) {
   set.seed(i)
+  print(i)
   
   X1 <- maximinLHS(n1, 2)
   X2 <- maximinLHS(n2, 2)
@@ -112,8 +115,9 @@ for(i in 1:rep) {
   ### closed ###
   tic.closed <- proc.time()[3]
   fit.closed <- RNAmf2(X1, y1, X2, y2, X3, y3, kernel="sqex", constant=TRUE)
-  predy <- predRNAmf2(fit.closed, x)$mu
-  predsig2 <- predRNAmf2(fit.closed, x)$sig2
+  pred.closed <- predRNAmf2(fit.closed, x)
+  predy <- pred.closed$mu
+  predsig2 <- pred.closed$sig2
   toc.closed <- proc.time()[3]
   
   ### KOH method ###
@@ -190,6 +194,12 @@ for(i in 1:rep) {
   result.branin.comptime[i,2] <- toc.cokm - tic.cokm
 }
 
+# install.packages("reticulate")
+# library(reticulate)
+# py_run_file("/Users/junoh/Desktop/Desktop/Documents/Stat/PhD/Research/Multi-fidelity/Multi-fidelity/Branin.py")
+# result.branin.rmse <- cbind(result.branin.rmse, NARGP=unlist(py$l2error))
+# result.branin.meancrps <- cbind(result.branin.meancrps, NARGP=unlist(py$meancrps))
+# result.branin.comptime <- cbind(result.branin.comptime, NARGP=unlist(py$comptime))
 
 par(mfrow=c(1,1))
 #RMSE comparison#

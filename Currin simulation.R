@@ -3,10 +3,7 @@ library(lhs)
 library(laGP)
 library(plgp)
 library(MuFiCokriging)
-source("GP.R")
-source("KOH.R")
-source("closed.R")
-source("score.R")
+library(RNAmf)
 
 crps <- function(x, mu, sig2){ # The smaller, the better (0 to infinity)
   if(any(sig2==0)) sig2[sig2==0] <- eps
@@ -58,7 +55,8 @@ colnames(result.currin.comptime) <- c("closed", "Cokriging") # The smaller, the 
 
 for(i in 1:rep) {
   set.seed(i)
-
+  print(i)
+  
   X1 <- maximinLHS(n1, d)
   X2 <- maximinLHS(n2, d)
   
@@ -69,43 +67,51 @@ for(i in 1:rep) {
   
   y1 <- apply(X1,1,curretal88explc)
   y2 <- apply(X2,1,curretal88exp)
-
-eps <- sqrt(.Machine$double.eps)
-
-### test data ###
-x <- maximinLHS(1000, d)
-
-
-### closed ###
-tic.closed <- proc.time()[3]
-fit.closed <- RNAmf(X1, y1, X2, y2, kernel="sqex", constant=TRUE)
-predy <- predRNAmf(fit.closed, x)$mu
-predsig2 <- predRNAmf(fit.closed, x)$sig2
-toc.closed <- proc.time()[3]
-
-
-### Cokriging ###
-tic.cokm <- proc.time()[3]
-fit.muficokm <- MuFicokm(formula = list(~1,~1), MuFidesign = NestDesign, covtype="gauss",
-                         lower=eps, upper=0.1,
-                         # coef.trend = list(0,c(0,0)),
-                         response = list(y1,y2), nlevel = 2)
-pred.muficokm <- predict(fit.muficokm, x, "SK")
-toc.cokm <- proc.time()[3]
-
-
-### RMSE ###
-
-result.currin.rmse[i,1] <- sqrt(mean((predy-apply(x,1,curretal88exp))^2)) # closed form
-result.currin.rmse[i,2] <- sqrt(mean((pred.muficokm$mean-apply(x,1,curretal88exp))^2)) # Cokriging
-
-result.currin.meancrps[i,1] <- mean(crps(apply(x,1,curretal88exp), predy, predsig2)) # closed form
-result.currin.meancrps[i,2] <- mean(crps(apply(x,1,curretal88exp), pred.muficokm$mean, pred.muficokm$sig2)) # Cokriging
-
-result.currin.comptime[i,1] <- toc.closed - tic.closed
-result.currin.comptime[i,2] <- toc.cokm - tic.cokm
-
+  
+  eps <- sqrt(.Machine$double.eps)
+  
+  ### test data ###
+  x <- maximinLHS(1000, d)
+  
+  
+  ### closed ###
+  tic.closed <- proc.time()[3]
+  fit.closed <- RNAmf(X1, y1, X2, y2, kernel="sqex", constant=TRUE)
+  pred.closed <- predRNAmf(fit.closed, x)
+  predy <- pred.closed$mu
+  predsig2 <- pred.closed$sig2
+  toc.closed <- proc.time()[3]
+  
+  
+  ### Cokriging ###
+  tic.cokm <- proc.time()[3]
+  fit.muficokm <- MuFicokm(formula = list(~1,~1), MuFidesign = NestDesign, covtype="gauss",
+                           lower=eps, upper=0.1,
+                           # coef.trend = list(0,c(0,0)),
+                           response = list(y1,y2), nlevel = 2)
+  pred.muficokm <- predict(fit.muficokm, x, "SK")
+  toc.cokm <- proc.time()[3]
+  
+  
+  ### RMSE ###
+  
+  result.currin.rmse[i,1] <- sqrt(mean((predy-apply(x,1,curretal88exp))^2)) # closed form
+  result.currin.rmse[i,2] <- sqrt(mean((pred.muficokm$mean-apply(x,1,curretal88exp))^2)) # Cokriging
+  
+  result.currin.meancrps[i,1] <- mean(crps(apply(x,1,curretal88exp), predy, predsig2)) # closed form
+  result.currin.meancrps[i,2] <- mean(crps(apply(x,1,curretal88exp), pred.muficokm$mean, pred.muficokm$sig2)) # Cokriging
+  
+  result.currin.comptime[i,1] <- toc.closed - tic.closed
+  result.currin.comptime[i,2] <- toc.cokm - tic.cokm
+  
 }
+
+# install.packages("reticulate")
+# library(reticulate)
+# py_run_file("/Users/junoh/Desktop/Desktop/Documents/Stat/PhD/Research/Multi-fidelity/Multi-fidelity/Currin.py")
+# result.currin.rmse <- cbind(result.currin.rmse, NARGP=unlist(py$l2error))
+# result.currin.meancrps <- cbind(result.currin.meancrps, NARGP=unlist(py$meancrps))
+# result.currin.comptime <- cbind(result.currin.comptime, NARGP=unlist(py$comptime))
 
 par(mfrow=c(1,1))
 #RMSE comparison#
