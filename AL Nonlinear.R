@@ -2,9 +2,18 @@ library(lhs)
 library(laGP)
 library(plgp)
 library(MuFiCokriging)
+library(doParallel)
+library(foreach)
+library(RNAmf)
+
+crps <- function(x, mu, sig2){ # The smaller, the better (0 to infinity)
+  if(any(sig2==0)) sig2[sig2==0] <- eps
+  -sqrt(sig2)*(1/sqrt(pi)-2*dnorm((x-mu)/sqrt(sig2))-(x-mu)/sqrt(sig2)*(2*pnorm((x-mu)/sqrt(sig2))-1))
+}
 
 costmatc <- list(NA)
 rmsematc <- list(NA)
+crpsmatc <- list(NA)
 ### synthetic function ###
 f1 <- function(x)
 {
@@ -47,6 +56,7 @@ for(kk in 1:10){
   
   nonlinear.cost <- 0
   nonlinear.error <- sqrt(mean((predy-f2(x))^2))
+  nonlinear.crps <- mean(crps(f2(x), predy, predsig2))
   
   Iselect <- ALM_two_level(fit.closed, c(1,3), list(f1, f2))
 
@@ -60,7 +70,8 @@ for(kk in 1:10){
     predsig2 <- predRNAmf(Iselect$fit, x)$sig2
 
     ### RMSE ###
-    nonlinear.error <- c(nonlinear.error, sqrt(mean((predy-f2(x))^2))) # closed form
+    nonlinear.error <- c(nonlinear.error, sqrt(mean((predy-f2(x))^2))) # RMSE
+    nonlinear.crps <- c(nonlinear.crps, mean(crps(f2(x), predy, predsig2))) # CRPS
     if(Iselect$chosen$level == 1){
       nonlinear.cost[length(nonlinear.cost)+1] <- nonlinear.cost[length(nonlinear.cost)]+1
     }else{
@@ -73,6 +84,7 @@ for(kk in 1:10){
     
     ### update the next point ###
     Iselect <- ALM_two_level(Iselect$fit, c(1,3), list(f1, f2))
+    # save.image("C:/Users/heojunoh/Desktop/RNAmf/Perd AL 1,3.RData")
   }
 
 
@@ -94,9 +106,12 @@ for(kk in 1:10){
   ### Save results ###
   costmatc[[kk]] <- nonlinear.cost
   rmsematc[[kk]] <- nonlinear.error
+  crpsmatc[[kk]] <- park.crps
+  # save.image("C:/Users/heojunoh/Desktop/RNAmf/Perd AL 1,3.RData")
 }
 costmatc
 rmsematc
+crpsmatc
 
 
 

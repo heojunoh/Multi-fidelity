@@ -4,11 +4,16 @@ library(plgp)
 library(MuFiCokriging)
 library(doParallel)
 library(foreach)
-library(maximin)
 library(RNAmf)
+
+crps <- function(x, mu, sig2){ # The smaller, the better (0 to infinity)
+  if(any(sig2==0)) sig2[sig2==0] <- eps
+  -sqrt(sig2)*(1/sqrt(pi)-2*dnorm((x-mu)/sqrt(sig2))-(x-mu)/sqrt(sig2)*(2*pnorm((x-mu)/sqrt(sig2))-1))
+}
 
 costmatc3 <- list(NA)
 rmsematc3 <- list(NA)
+crpsmatc3 <- list(NA)
 ### synthetic function ###
 park91a <- function(xx)
 {
@@ -48,7 +53,7 @@ park91alc <- function(xx)
 ### training data ###
 n1 <- 40; n2 <- 20
 d <- 4
-registerDoParallel(8)
+
 for(kk in 1:10){
   set.seed(kk)
   print(kk)
@@ -75,43 +80,49 @@ for(kk in 1:10){
   ### RMSE ###
   sqrt(mean((predy-apply(x,1,park91a))^2)) # closed form
   
-  nonlinear.cost <- 0
-  nonlinear.error <- sqrt(mean((predy-apply(x,1,park91a))^2))
+  park.cost <- 0
+  park.error <- sqrt(mean((predy-apply(x,1,park91a))^2))
+  park.crps <- mean(crps(apply(x,1,park91a), predy, predsig2))
   
-  Iselect <- ALMC_two_level(x, fit.closed, 100, c(1,3), list(park91alc, park91a))
+  Iselect <- ALMC_two_level(x, fit.closed, 100, c(1,3), list(park91alc, park91a), parallel=TRUE, ncore=9)
   
   
   #################
   ### Add point ###
   #################
-  while(nonlinear.cost[length(nonlinear.cost)] < 100){ # if total cost is less than the budget
+  while(park.cost[length(park.cost)] < 100){ # if total cost is less than the budget
     ### closed ###
     predy <- predRNAmf(Iselect$fit, x)$mu
     predsig2 <- predRNAmf(Iselect$fit, x)$sig2
     
     ### RMSE ###
-    nonlinear.error <- c(nonlinear.error, sqrt(mean((predy-apply(x,1,park91a))^2))) # closed form
+    park.error <- c(park.error, sqrt(mean((predy-apply(x,1,park91a))^2))) # RMSE
+    park.crps <- c(park.crps, mean(crps(apply(x,1,park91a), predy, predsig2))) # CRPS
     if(Iselect$chosen$level == 1){
-      nonlinear.cost[length(nonlinear.cost)+1] <- nonlinear.cost[length(nonlinear.cost)]+1
+      park.cost[length(park.cost)+1] <- park.cost[length(park.cost)]+1
     }else{
-      nonlinear.cost[length(nonlinear.cost)+1] <- nonlinear.cost[length(nonlinear.cost)]+(1+3)
+      park.cost[length(park.cost)+1] <- park.cost[length(park.cost)]+(1+3)
     }
-    print(nonlinear.cost[length(nonlinear.cost)])
-    print(nonlinear.error[length(nonlinear.error)])
+    print(park.cost[length(park.cost)])
+    print(park.error[length(park.error)])
     
-    if(nonlinear.cost[length(nonlinear.cost)] >= 100){break}
+    if(park.cost[length(park.cost)] >= 100){break}
     
     ### update the next point ###
-    Iselect <- ALMC_two_level(x, Iselect$fit, 100, c(1,3), list(park91alc, park91a))
+    Iselect <- ALMC_two_level(x, Iselect$fit, 100, c(1,3), list(park91alc, park91a), parallel=TRUE, ncore=9)
+    # save.image("C:/Users/heojunoh/Desktop/RNAmf/Park AL3 1,3.RData")
   }
   
   
   ### Save results ###
-  costmatc3[[kk]] <- nonlinear.cost
-  rmsematc3[[kk]] <- nonlinear.error
+  costmatc3[[kk]] <- park.cost
+  rmsematc3[[kk]] <- park.error
+  crpsmatc3[[kk]] <- park.crps
+  # save.image("C:/Users/heojunoh/Desktop/RNAmf/Park AL3 1,3.RData")
 }
 costmatc3
 rmsematc3
+crpsmatc3
 
 
 

@@ -4,11 +4,16 @@ library(plgp)
 library(MuFiCokriging)
 library(doParallel)
 library(foreach)
-library(maximin)
 library(RNAmf)
+
+crps <- function(x, mu, sig2){ # The smaller, the better (0 to infinity)
+  if(any(sig2==0)) sig2[sig2==0] <- eps
+  -sqrt(sig2)*(1/sqrt(pi)-2*dnorm((x-mu)/sqrt(sig2))-(x-mu)/sqrt(sig2)*(2*pnorm((x-mu)/sqrt(sig2))-1))
+}
 
 costmatc2 <- list(NA)
 rmsematc2 <- list(NA)
+crpsmatc2 <- list(NA)
 ### synthetic function ###
 f1 <- function(x)
 {
@@ -22,7 +27,7 @@ f2 <- function(x)
 
 ### training data ###
 n1 <- 13; n2 <- 8
-# registerDoParallel(3)
+
 for(kk in 1:10){
   set.seed(kk)
   print(kk)
@@ -51,8 +56,9 @@ for(kk in 1:10){
   
   nonlinear.cost <- 0
   nonlinear.error <- sqrt(mean((predy-f2(x))^2))
+  nonlinear.crps <- mean(crps(f2(x), predy, predsig2))
   
-  Iselect <- ALC_two_level(x, fit.closed, 100, c(1,3), list(f1, f2))
+  Iselect <- ALC_two_level(x, fit.closed, 100, c(1,3), list(f1, f2), parallel=TRUE, ncore=9)
 
 
   #################
@@ -64,7 +70,8 @@ for(kk in 1:10){
     predsig2 <- predRNAmf(Iselect$fit, x)$sig2
 
     ### RMSE ###
-    nonlinear.error <- c(nonlinear.error, sqrt(mean((predy-f2(x))^2))) # closed form
+    nonlinear.error <- c(nonlinear.error, sqrt(mean((predy-f2(x))^2))) # RMSE
+    nonlinear.crps <- c(nonlinear.crps, mean(crps(f2(x), predy, predsig2))) # CRPS
     if(Iselect$chosen$level == 1){
       nonlinear.cost[length(nonlinear.cost)+1] <- nonlinear.cost[length(nonlinear.cost)]+1
     }else{
@@ -76,7 +83,8 @@ for(kk in 1:10){
     if(nonlinear.cost[length(nonlinear.cost)] >= 100){break}
     
     ### update the next point ###
-    Iselect <- ALC_two_level(x, Iselect$fit, 100, c(1,3), list(f1, f2))
+    Iselect <- ALC_two_level(x, Iselect$fit, 100, c(1,3), list(f1, f2), parallel=TRUE, ncore=9)
+    # save.image("C:/Users/heojunoh/Desktop/RNAmf/Perd AL2 1,3.RData")
   }
 
 
@@ -98,9 +106,12 @@ for(kk in 1:10){
   ### Save results ###
   costmatc2[[kk]] <- nonlinear.cost
   rmsematc2[[kk]] <- nonlinear.error
+  crpsmatc2[[kk]] <- park.crps
+  # save.image("C:/Users/heojunoh/Desktop/RNAmf/Perd AL2 1,3.RData")
 }
 costmatc2
 rmsematc2
+crpsmatc2
 
 
 
