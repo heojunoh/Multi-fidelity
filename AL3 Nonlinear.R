@@ -15,6 +15,7 @@ crps <- function(x, mu, sig2){ # The smaller, the better (0 to infinity)
 costmatc3 <- list(NA)
 rmsematc3 <- list(NA)
 crpsmatc3 <- list(NA)
+time.each3 <- rep(0,10)
 ### synthetic function ###
 f1 <- function(x)
 {
@@ -30,6 +31,7 @@ f2 <- function(x)
 n1 <- 13; n2 <- 8
 
 for(kk in 1:10){
+  time.start <- proc.time()[3]
   set.seed(kk)
   print(kk)
   X1 <- maximinLHS(n1, 1)
@@ -59,7 +61,7 @@ for(kk in 1:10){
   nonlinear.error <- sqrt(mean((predy-f2(x))^2))
   nonlinear.crps <- mean(crps(f2(x), predy, predsig2))
   
-  Iselect <- ALMC_two_level(x, fit.closed, 100, c(1,3), list(f1, f2), parallel=TRUE, ncore=9)
+  Iselect <- ALMC_two_level(x, fit.closed, 100, c(1,3), list(f1, f2), parallel=TRUE, ncore=10)
   
   
   #################
@@ -84,8 +86,8 @@ for(kk in 1:10){
     if(nonlinear.cost[length(nonlinear.cost)] >= 100){break}
 
     ### update the next point ###
-    Iselect <- ALMC_two_level(x, Iselect$fit, 100, c(1,3), list(f1, f2), parallel=TRUE, ncore=9)
-    # save.image("C:/Users/heojunoh/Desktop/RNAmf/Perd AL3 1,3.RData")
+    Iselect <- ALMC_two_level(x, Iselect$fit, 100, c(1,3), list(f1, f2), parallel=TRUE, ncore=10)
+    # save.image("/Users/junoh/Downloads/Perd AL3 1,3.RData")
   }
   
   
@@ -108,11 +110,14 @@ for(kk in 1:10){
   costmatc3[[kk]] <- nonlinear.cost
   rmsematc3[[kk]] <- nonlinear.error
   crpsmatc3[[kk]] <- nonlinear.crps
-  # save.image("C:/Users/heojunoh/Desktop/RNAmf/Perd AL3 1,3.RData")
+  save.image("/Users/junoh/Downloads/Perd AL3 1,3.RData")
+  
+  time.each3[kk] <- proc.time()[3]- time.start
 }
 costmatc3
 rmsematc3
 crpsmatc3
+time.each3
 
 
 

@@ -15,6 +15,7 @@ crps <- function(x, mu, sig2){ # The smaller, the better (0 to infinity)
 costmatc2 <- list(NA)
 rmsematc2 <- list(NA)
 crpsmatc2 <- list(NA)
+time.each2 <- rep(0,10)
 ### synthetic function ###
 park91a <- function(xx)
 {
@@ -56,6 +57,7 @@ n1 <- 40; n2 <- 20
 d <- 4
 
 for(kk in 1:10){
+  time.start <- proc.time()[3]
   set.seed(kk)
   print(kk)
   X1 <- maximinLHS(n1, d)
@@ -85,7 +87,7 @@ for(kk in 1:10){
   park.error <- sqrt(mean((predy-apply(x,1,park91a))^2))
   park.crps <- mean(crps(apply(x,1,park91a), predy, predsig2))
 
-  Iselect <- ALC_two_level(x, fit.closed, 100, c(1,9), list(park91alc, park91a), parallel=TRUE, ncore=9)
+  Iselect <- ALC_two_level(x, fit.closed, 100, c(1,9), list(park91alc, park91a), parallel=TRUE, ncore=10)
   
 
   #################
@@ -110,8 +112,8 @@ for(kk in 1:10){
     if(park.cost[length(park.cost)] >= 50){break}
     
     ### update the next point ###
-    Iselect <- ALC_two_level(x, Iselect$fit, 100, c(1,9), list(park91alc, park91a), parallel=TRUE, ncore=9)
-    # save.image("C:/Users/heojunoh/Desktop/RNAmf/Park AL2 1,9.RData")
+    Iselect <- ALC_two_level(x, Iselect$fit, 100, c(1,9), list(park91alc, park91a), parallel=TRUE, ncore=10)
+    # save.image("C:/Users/heojunoh/Desktop/Park AL2 1,9.RData")
   }
 
 
@@ -119,11 +121,14 @@ for(kk in 1:10){
   costmatc2[[kk]] <- park.cost
   rmsematc2[[kk]] <- park.error
   crpsmatc2[[kk]] <- park.crps
-  # save.image("C:/Users/heojunoh/Desktop/RNAmf/Park AL2 1,9.RData")
+  # save.image("C:/Users/heojunoh/Desktop/Park AL2 1,9.RData")
+  
+  time.each2[kk] <- proc.time()[3]- time.start
 }
 costmatc2
 rmsematc2
 crpsmatc2
+time.each2
 
 
 
