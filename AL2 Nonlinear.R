@@ -59,7 +59,7 @@ for(kk in 1:10){
   nonlinear.error <- sqrt(mean((predy-f2(x))^2))
   nonlinear.crps <- mean(crps(f2(x), predy, predsig2))
   
-  Iselect <- ALC_two_level(x, fit.closed, 100, c(1,3), list(f1, f2), parallel=TRUE, ncore=9)
+  Iselect <- ALC_two_level(x, fit.closed, 100, c(1,9), list(f1, f2), parallel=TRUE, ncore=9)
 
 
   #################
@@ -76,7 +76,7 @@ for(kk in 1:10){
     if(Iselect$chosen$level == 1){
       nonlinear.cost[length(nonlinear.cost)+1] <- nonlinear.cost[length(nonlinear.cost)]+1
     }else{
-      nonlinear.cost[length(nonlinear.cost)+1] <- nonlinear.cost[length(nonlinear.cost)]+(1+3)
+      nonlinear.cost[length(nonlinear.cost)+1] <- nonlinear.cost[length(nonlinear.cost)]+(1+9)
     }
     print(nonlinear.cost[length(nonlinear.cost)])
     print(nonlinear.error[length(nonlinear.error)])
@@ -84,8 +84,8 @@ for(kk in 1:10){
     if(nonlinear.cost[length(nonlinear.cost)] >= 100){break}
     
     ### update the next point ###
-    Iselect <- ALC_two_level(x, Iselect$fit, 100, c(1,3), list(f1, f2), parallel=TRUE, ncore=9)
-    # save.image("C:/Users/heojunoh/Desktop/RNAmf/Perd AL2 1,3.RData")
+    Iselect <- ALC_two_level(x, Iselect$fit, 100, c(1,9), list(f1, f2), parallel=TRUE, ncore=9)
+    # save.image("C:/Users/heojunoh/Desktop/RNAmf/Perd AL2 1,9.RData")
   }
 
 
@@ -107,8 +107,8 @@ for(kk in 1:10){
   ### Save results ###
   costmatc2[[kk]] <- nonlinear.cost
   rmsematc2[[kk]] <- nonlinear.error
-  crpsmatc2[[kk]] <- park.crps
-  # save.image("C:/Users/heojunoh/Desktop/RNAmf/Perd AL2 1,3.RData")
+  crpsmatc2[[kk]] <- nonlinear.crps
+  # save.image("C:/Users/heojunoh/Desktop/RNAmf/Perd AL2 1,9.RData")
 }
 costmatc2
 rmsematc2

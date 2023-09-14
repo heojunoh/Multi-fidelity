@@ -107,7 +107,7 @@ for(kk in 1:10){
   ### Save results ###
   costmatc[[kk]] <- nonlinear.cost
   rmsematc[[kk]] <- nonlinear.error
-  crpsmatc[[kk]] <- park.crps
+  crpsmatc[[kk]] <- nonlinear.crps
   # save.image("C:/Users/heojunoh/Desktop/RNAmf/Perd AL 1,3.RData")
 }
 costmatc
