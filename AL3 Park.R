@@ -90,7 +90,7 @@ for(kk in 1:10){
   #################
   ### Add point ###
   #################
-  while(park.cost[length(park.cost)] < 100){ # if total cost is less than the budget
+  while(park.cost[length(park.cost)] < 50){ # if total cost is less than the budget
     ### closed ###
     predy <- predRNAmf(Iselect$fit, x)$mu
     predsig2 <- predRNAmf(Iselect$fit, x)$sig2
@@ -106,7 +106,7 @@ for(kk in 1:10){
     print(park.cost[length(park.cost)])
     print(park.error[length(park.error)])
     
-    if(park.cost[length(park.cost)] >= 100){break}
+    if(park.cost[length(park.cost)] >= 50){break}
     
     ### update the next point ###
     Iselect <- ALMC_two_level(x, Iselect$fit, 100, c(1,3), list(park91alc, park91a), parallel=TRUE, ncore=9)
